@@ -5,15 +5,17 @@
 #include <string>
 #include <cctype>
 
+using namespace std;
+
 struct Movie {
     int id;
-    std::string title;
+    string title;
     bool adult;
-    std::string original_language;
-    std::vector<std::string> origin_country;
-    std::string release_date;
-    std::vector<std::string> genre_names;
-    std::vector<std::string> production_company_names;
+    string original_language;
+    vector<string> origin_country;
+    string release_date;
+    vector<string> genre_names;
+    vector<string> production_company_names;
     double budget;
     double revenue;
     int runtime;
@@ -23,9 +25,9 @@ struct Movie {
 };
 
 // Splits CSV respecting quotes
-std::vector<std::string> parseCSVRow(const std::string &line) {
-    std::vector<std::string> fields;
-    std::string cur;
+vector<string> parseCSVRow(const string &line) {
+    vector<string> fields;
+    string cur;
     bool inQuotes = false;
 
     for (char c : line) {
@@ -45,13 +47,13 @@ std::vector<std::string> parseCSVRow(const std::string &line) {
 }
 
 // Extracts list fields like ['US', 'GB'] → vector<string>
-std::vector<std::string> parseList(const std::string &s) {
-    std::vector<std::string> result;
-    std::string temp;
+vector<string> parseList(const string &s) {
+    vector<string> result;
+    string temp;
     bool inWord = false;
 
     for (char c : s) {
-        if (std::isalnum(c)) {
+        if (isalnum(c)) {
             temp.push_back(c);
             inWord = true;
         } else {
@@ -67,31 +69,31 @@ std::vector<std::string> parseList(const std::string &s) {
     return result;
 }
 
-std::vector<Movie> loadMoviesFromCSV(const std::string &filename) {
-    std::vector<Movie> movies;
-    std::ifstream file(filename);
+vector<Movie> loadMoviesFromCSV(const string &filename) {
+    vector<Movie> movies;
+    ifstream file(filename);
 
     if (!file.is_open()) {
-        std::cerr << "Error opening file.\n";
+        cerr << "Error opening file.\n";
         return movies;
     }
 
-    std::string line;
-    std::getline(file, line); // skip header
+    string line;
+    getline(file, line); // skip header
 
-    while (std::getline(file, line)) {
+    while (getline(file, line)) {
         if (line.empty()) continue;
 
         auto fields = parseCSVRow(line);
         if (fields.size() != 14) {
-            std::cerr << "Skipping malformed row: " << line << "\n";
+            cerr << "Skipping malformed row: " << line << "\n";
             continue;
         }
 
         Movie m;
         int i = 0;
 
-        m.id = std::stoi(fields[i++]);
+        m.id = stoi(fields[i++]);
         m.title = fields[i++];
         m.adult = (fields[i++] == "TRUE" || fields[i-1] == "true");
         m.original_language = fields[i++];
@@ -99,12 +101,12 @@ std::vector<Movie> loadMoviesFromCSV(const std::string &filename) {
         m.release_date = fields[i++];
         m.genre_names = parseList(fields[i++]);
         m.production_company_names = parseList(fields[i++]);
-        m.budget = std::stod(fields[i++]);
-        m.revenue = std::stod(fields[i++]);
-        m.runtime = std::stoi(fields[i++]);
-        m.popularity = std::stod(fields[i++]);
-        m.vote_average = std::stod(fields[i++]);
-        m.vote_count = std::stoi(fields[i++]);
+        m.budget = stod(fields[i++]);
+        m.revenue = stod(fields[i++]);
+        m.runtime = stoi(fields[i++]);
+        m.popularity = stod(fields[i++]);
+        m.vote_average = stod(fields[i++]);
+        m.vote_count = stoi(fields[i++]);
 
         movies.push_back(m);
     }
@@ -113,18 +115,18 @@ std::vector<Movie> loadMoviesFromCSV(const std::string &filename) {
 }
 
 int main() {
-    std::string filename = "data_movies_clean.csv";
+    string filename = "data_movies_clean.csv";
 
-    std::vector<Movie> movies = loadMoviesFromCSV(filename);
+    vector<Movie> movies = loadMoviesFromCSV(filename);
 
-    std::cout << "Loaded " << movies.size() << " movies.\n";
+    cout << "Loaded " << movies.size() << " movies.\n";
 
     if (!movies.empty()) {
-        std::cout << "\nFirst movie loaded:\n";
-        std::cout << "ID: " << movies[0].id << "\n";
-        std::cout << "Title: " << movies[0].title << "\n";
-        std::cout << "Language: " << movies[0].original_language << "\n";
-        std::cout << "Budget: " << movies[0].budget << "\n";
+        cout << "\nFirst movie loaded:\n";
+        cout << "ID: " << movies[0].id << "\n";
+        cout << "Title: " << movies[0].title << "\n";
+        cout << "Language: " << movies[0].original_language << "\n";
+        cout << "Budget: " << movies[0].budget << "\n";
     }
 
     return 0;
