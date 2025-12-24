@@ -2,3 +2,5 @@
 *.xlsx
 *.csv
 venv/*
+FileReader
+a.out
