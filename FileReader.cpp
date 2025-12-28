@@ -4,25 +4,13 @@
 #include <vector>
 #include <string>
 #include <cctype>
+#include "Movie.h" // Include the shared Movie struct
+#include "Rtree/Rtree.h" // Include the RTree class
+
 
 using namespace std;
 
-struct Movie {
-    int id;
-    string title;
-    bool adult;
-    string original_language;
-    vector<string> origin_country;
-    string release_date;
-    vector<string> genre_names;
-    vector<string> production_company_names;
-    double budget;
-    double revenue;
-    int runtime;
-    double popularity;
-    double vote_average;
-    int vote_count;
-};
+
 
 // Splits CSV respecting quotes
 vector<string> parseCSVRow(const string &line) {
@@ -117,17 +105,26 @@ vector<Movie> loadMoviesFromCSV(const string &filename) {
 int main() {
     string filename = "data_movies_clean.csv";
 
+    cout << "Loading movies...\n";
     vector<Movie> movies = loadMoviesFromCSV(filename);
 
+
+    if (movies.empty()) {
+        cerr << "No data loaded. Exiting." << endl;
+        return 1;
+    }
+    
     cout << "Loaded " << movies.size() << " movies.\n";
 
-    if (!movies.empty()) {
-        cout << "\nFirst movie loaded:\n";
-        cout << "ID: " << movies[0].id << "\n";
-        cout << "Title: " << movies[0].title << "\n";
-        cout << "Language: " << movies[0].original_language << "\n";
-        cout << "Budget: " << movies[0].budget << "\n";
-    }
+    /*cout << "\nFirst movie loaded:\n";
+    cout << "ID: " << movies[0].id << "\n";
+    cout << "Title: " << movies[0].title << "\n";
+    cout << "Language: " << movies[0].original_language << "\n";
+    cout << "Budget: " << movies[0].budget << "\n"; */
 
+    RTree tree;
+    tree.build(movies);
+    tree.executeSearchPhase();
+    
     return 0;
 }
