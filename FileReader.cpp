@@ -101,30 +101,3 @@ vector<Movie> loadMoviesFromCSV(const string &filename) {
 
     return movies;
 }
-
-int main() {
-    string filename = "data_movies_clean.csv";
-
-    cout << "Loading movies...\n";
-    vector<Movie> movies = loadMoviesFromCSV(filename);
-
-
-    if (movies.empty()) {
-        cerr << "No data loaded. Exiting." << endl;
-        return 1;
-    }
-    
-    cout << "Loaded " << movies.size() << " movies.\n";
-
-    /*cout << "\nFirst movie loaded:\n";
-    cout << "ID: " << movies[0].id << "\n";
-    cout << "Title: " << movies[0].title << "\n";
-    cout << "Language: " << movies[0].original_language << "\n";
-    cout << "Budget: " << movies[0].budget << "\n"; */
-
-    RTree tree;
-    tree.build(movies);
-    tree.executeSearchPhase();
-    
-    return 0;
-}
