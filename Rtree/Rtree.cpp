@@ -37,41 +37,6 @@ void RTree::insert(Movie* movie) {
     root->mbr.expand(coords);
 }
 
-// Interactive terminal menu to define search ranges
-void RTree::executeSearchPhase() {
-    cout << "\n--- Executing Multi-Dimensional Query ---" << endl;
-    Rect query;
-    string attrNames[K] = {"Budget", "Revenue", "Runtime", "Popularity", "Vote Average"};
-
-    for (int i = 0; i < K; ++i) {
-        char choice;
-        cout << "Filter by " << attrNames[i] << "? (y/n): ";
-        cin >> choice;
-
-        if (choice == 'y' || choice == 'Y') {
-            cout << "  Enter min " << attrNames[i] << ": ";
-            cin >> query.min_coords[i];
-            cout << "  Enter max " << attrNames[i] << ": ";
-            cin >> query.max_coords[i];
-        } else {
-            // If user skips a filter, set range to 0 -> Huge Number to include everything
-            query.min_coords[i] = 0;
-            query.max_coords[i] = 1e15; 
-        }
-    }
-
-    vector<Movie*> Candidates = search(query);
-    cout << "\nQuery found " << Candidates.size() << " candidates." << endl;
-    
-    // Display only the first 5 Candidates to keep the terminal clean
-    int displayCount = (Candidates.size() > 5) ? 5 : (int)Candidates.size();
-    for (int i = 0; i < displayCount; ++i) {
-        cout << " - " << Candidates[i]->title 
-                  << " (Pop: " << Candidates[i]->popularity 
-                  << ", Rating: " << Candidates[i]->vote_average << ")" << endl;
-    }
-}
-
 // Public wrapper for the recursive search
 vector<Movie*> RTree::search(const Rect& query) {
     vector<Movie*> Candidates;
