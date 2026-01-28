@@ -4,3 +4,4 @@
 venv/*
 FileReader
 a.out
+*.exe
