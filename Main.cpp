@@ -8,6 +8,7 @@
 #include "FileReader.h"
 #include "Rtree/Rtree.h"
 #include "KDtree/KDTree.h"
+#include "QuadTree/quadtree.h"
 
 using namespace std;
 
@@ -156,6 +157,16 @@ Rect arrayToRect(const array<double, KD_DIMS>& minBounds, const array<double, KD
     return r;
 }
 
+// Convert array to QuadRect for Quadtree
+QuadRect arrayToQuadRect(const array<double, KD_DIMS>& minBounds, const array<double, KD_DIMS>& maxBounds) {
+    QuadRect qr;
+    for (int i = 0; i < Q_K; i++) {
+        qr.min_coords[i] = minBounds[i];
+        qr.max_coords[i] = maxBounds[i];
+    }
+    return qr;
+}
+
 int main() {
     // Load movies from CSV file
     cout << "Loading movies from CSV..." << endl;
@@ -178,6 +189,7 @@ int main() {
     // Tree instances (built on demand)
     RTree* rtree = nullptr;
     KDTree* kdtree = nullptr;
+    Quadtree* qtree = nullptr;
     
     bool running = true;
     
@@ -188,27 +200,28 @@ int main() {
         cout << "╠════════════════════════════════════════╣" << endl;
         cout << "║  1. Use R-Tree                         ║" << endl;
         cout << "║  2. Use KD-Tree                        ║" << endl;
-        cout << "║  3. Compare Both Trees                 ║" << endl;
-        cout << "║  4. Exit                               ║" << endl;
+        cout << "║  3. Use Quadtree (Hyperoctree)         ║" << endl;
+        cout << "║  4. Compare all three                  ║" << endl;
+        cout << "║  5. Exit                               ║" << endl;
         cout << "╚════════════════════════════════════════╝" << endl;
-        cout << "Enter your choice (1-4): ";
+        cout << "Enter your choice (1-5): ";
         
         int treeChoice;
         cin >> treeChoice;
         
-        if (treeChoice == 4) {
+        if (treeChoice == 5) {
             cout << "Exiting..." << endl;
             running = false;
             break;
         }
         
-        if (treeChoice < 1 || treeChoice > 3) {
+        if (treeChoice < 1 || treeChoice > 4) {
             cout << "Invalid choice. Please try again." << endl;
             continue;
         }
         
         // Build trees if needed
-        if ((treeChoice == 1 || treeChoice == 3) && rtree == nullptr) {
+        if ((treeChoice == 1 || treeChoice == 4) && rtree == nullptr) {
             auto start = chrono::high_resolution_clock::now();
             rtree = new RTree();
             rtree->build(movies);
@@ -217,13 +230,23 @@ int main() {
             cout << "R-Tree built in " << ms << " ms." << endl;
         }
         
-        if ((treeChoice == 2 || treeChoice == 3) && kdtree == nullptr) {
+        if ((treeChoice == 2 || treeChoice == 4) && kdtree == nullptr) {
             auto start = chrono::high_resolution_clock::now();
             kdtree = new KDTree();
             kdtree->build(movies);
             auto end = chrono::high_resolution_clock::now();
             auto ms = chrono::duration_cast<chrono::milliseconds>(end - start).count();
             cout << "KD-Tree built in " << ms << " ms." << endl;
+        }
+        
+        // Build Quadtree if needed
+        if ((treeChoice == 3 || treeChoice == 4) && qtree == nullptr) {
+            auto start = chrono::high_resolution_clock::now();
+            qtree = new Quadtree();
+            qtree->build(movies);
+            auto end = chrono::high_resolution_clock::now();
+            auto ms = chrono::duration_cast<chrono::milliseconds>(end - start).count();
+            cout << "Quadtree built in " << ms << " ms." << endl;
         }
         
         // Search loop for selected tree(s)
@@ -261,12 +284,24 @@ int main() {
                 displayResults(results);
             }
             else if (treeChoice == 3) {
-                // Compare both
-                Rect query = arrayToRect(minBounds, maxBounds);
+                // Quadtree only
+                QuadRect query = arrayToQuadRect(minBounds, maxBounds);
+                auto start = chrono::high_resolution_clock::now();
+                vector<Movie*> results = qtree->search(query);
+                auto end = chrono::high_resolution_clock::now();
+                auto ms = chrono::duration_cast<chrono::milliseconds>(end - start).count();
+
+                cout << "\n[Quadtree] Search completed in " << ms << " ms." << endl;
+                displayResults(results);
+            }
+            else if (treeChoice == 4) {
+                // Compare all three trees
+                Rect rQuery = arrayToRect(minBounds, maxBounds);
+                QuadRect qQuery = arrayToQuadRect(minBounds, maxBounds);
                 
                 // R-Tree search
                 auto rtreeStart = chrono::high_resolution_clock::now();
-                vector<Movie*> rtreeResults = rtree->search(query);
+                vector<Movie*> rtreeResults = rtree->search(rQuery);
                 auto rtreeEnd = chrono::high_resolution_clock::now();
                 auto rtreeMs = chrono::duration_cast<chrono::milliseconds>(rtreeEnd - rtreeStart).count();
                 
@@ -275,15 +310,22 @@ int main() {
                 vector<Movie*> kdtreeResults = kdtree->search(minBounds, maxBounds, movieById);
                 auto kdtreeEnd = chrono::high_resolution_clock::now();
                 auto kdtreeMs = chrono::duration_cast<chrono::milliseconds>(kdtreeEnd - kdtreeStart).count();
+
+                // Quadtree search
+                auto qtreeStart = chrono::high_resolution_clock::now();
+                vector<Movie*> qtreeResults = qtree->search(qQuery);
+                auto qtreeEnd = chrono::high_resolution_clock::now();
+                auto qtreeMs = chrono::duration_cast<chrono::milliseconds>(qtreeEnd - qtreeStart).count();
                 
                 cout << "\n╔════════════════════════════════════════╗" << endl;
                 cout << "║         Performance Comparison         ║" << endl;
                 cout << "╠════════════════════════════════════════╣" << endl;
-                cout << "║  R-Tree:   " << rtreeMs << " ms, " << rtreeResults.size() << " results" << endl;
-                cout << "║  KD-Tree:  " << kdtreeMs << " ms, " << kdtreeResults.size() << " results" << endl;
+                cout << "║  R-Tree:    " << rtreeMs  << " ms, " << rtreeResults.size()  << " results" << endl;
+                cout << "║  KD-Tree:   " << kdtreeMs << " ms, " << kdtreeResults.size() << " results" << endl;
+                cout << "║  Quadtree:  " << qtreeMs  << " ms, " << qtreeResults.size()  << " results" << endl;
                 cout << "╚════════════════════════════════════════╝" << endl;
                 
-                // Display KD-Tree results
+                // Display KD-Tree results as the detailed view
                 displayResults(kdtreeResults);
             }
         }
@@ -292,6 +334,7 @@ int main() {
     // Cleanup
     if (rtree != nullptr) delete rtree;
     if (kdtree != nullptr) delete kdtree;
+    if (qtree != nullptr) delete qtree;
     
     return 0;
 }
