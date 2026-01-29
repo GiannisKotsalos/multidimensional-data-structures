@@ -7,7 +7,7 @@
 #include "Movie.h"
 #include "FileReader.h"
 #include "Rtree/Rtree.h"
-#include "KDTree.h"
+#include "KDtree/KDTree.h"
 
 using namespace std;
 
