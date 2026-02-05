@@ -9,6 +9,7 @@
 #include "Rtree/Rtree.h"
 #include "KDtree/KDTree.h"
 #include "QuadTree/quadtree.h"
+#include "RangeTree/RangeTree.h"
 
 using namespace std;
 
@@ -59,8 +60,7 @@ pair<array<double, KD_DIMS>, array<double, KD_DIMS>> getUserQueryBounds() {
     cin >> choice;
     
     if (choice == 7) {
-        // Return empty bounds to signal going back
-        minBounds[0] = -1;
+        minBounds[0] = -1; // Signal to go back
         return {minBounds, maxBounds};
     }
     
@@ -68,70 +68,52 @@ pair<array<double, KD_DIMS>, array<double, KD_DIMS>> getUserQueryBounds() {
         case 1: { // Budget
             double minVal, maxVal;
             cout << "\n--- Filter by Budget ---" << endl;
-            cout << "Enter minimum budget (USD): ";
-            cin >> minVal;
-            cout << "Enter maximum budget (USD): ";
-            cin >> maxVal;
-            minBounds[0] = minVal;
-            maxBounds[0] = maxVal;
+            cout << "Enter minimum budget (USD): "; cin >> minVal;
+            cout << "Enter maximum budget (USD): "; cin >> maxVal;
+            minBounds[0] = minVal; maxBounds[0] = maxVal;
             break;
         }
         case 2: { // Revenue
             double minVal, maxVal;
             cout << "\n--- Filter by Revenue ---" << endl;
-            cout << "Enter minimum revenue (USD): ";
-            cin >> minVal;
-            cout << "Enter maximum revenue (USD): ";
-            cin >> maxVal;
-            minBounds[1] = minVal;
-            maxBounds[1] = maxVal;
+            cout << "Enter minimum revenue (USD): "; cin >> minVal;
+            cout << "Enter maximum revenue (USD): "; cin >> maxVal;
+            minBounds[1] = minVal; maxBounds[1] = maxVal;
             break;
         }
         case 3: { // Runtime
             int minVal, maxVal;
             cout << "\n--- Filter by Runtime ---" << endl;
-            cout << "Enter minimum runtime (minutes): ";
-            cin >> minVal;
-            cout << "Enter maximum runtime (minutes): ";
-            cin >> maxVal;
-            minBounds[2] = static_cast<double>(minVal);
-            maxBounds[2] = static_cast<double>(maxVal);
+            cout << "Enter minimum runtime (minutes): "; cin >> minVal;
+            cout << "Enter maximum runtime (minutes): "; cin >> maxVal;
+            minBounds[2] = static_cast<double>(minVal); maxBounds[2] = static_cast<double>(maxVal);
             break;
         }
         case 4: { // Popularity
             double minVal, maxVal;
             cout << "\n--- Filter by Popularity ---" << endl;
-            cout << "Enter minimum popularity: ";
-            cin >> minVal;
-            cout << "Enter maximum popularity: ";
-            cin >> maxVal;
-            minBounds[3] = minVal;
-            maxBounds[3] = maxVal;
+            cout << "Enter minimum popularity: "; cin >> minVal;
+            cout << "Enter maximum popularity: "; cin >> maxVal;
+            minBounds[3] = minVal; maxBounds[3] = maxVal;
             break;
         }
         case 5: { // Vote Average
             double minVal, maxVal;
             cout << "\n--- Filter by Vote Average ---" << endl;
-            cout << "Enter minimum vote average (0-10): ";
-            cin >> minVal;
-            cout << "Enter maximum vote average (0-10): ";
-            cin >> maxVal;
-            minBounds[4] = minVal;
-            maxBounds[4] = maxVal;
+            cout << "Enter minimum vote average (0-10): "; cin >> minVal;
+            cout << "Enter maximum vote average (0-10): "; cin >> maxVal;
+            minBounds[4] = minVal; maxBounds[4] = maxVal;
             break;
         }
         case 6: { // Multiple Criteria
             cout << "\n--- Filter by Multiple Criteria ---" << endl;
             cout << "Leave blank (press Enter) to skip a filter" << endl;
-            
             string input;
             cin.ignore();
-            
             for (int i = 0; i < KD_DIMS; i++) {
                 cout << "Minimum " << attrNames[i] << " (or Enter to skip): ";
                 getline(cin, input);
                 if (!input.empty()) minBounds[i] = stod(input);
-                
                 cout << "Maximum " << attrNames[i] << " (or Enter to skip): ";
                 getline(cin, input);
                 if (!input.empty()) maxBounds[i] = stod(input);
@@ -143,11 +125,10 @@ pair<array<double, KD_DIMS>, array<double, KD_DIMS>> getUserQueryBounds() {
             minBounds[0] = -1;
             break;
     }
-    
     return {minBounds, maxBounds};
 }
 
-// Convert array to Rect for R-Tree
+// Helper Converters
 Rect arrayToRect(const array<double, KD_DIMS>& minBounds, const array<double, KD_DIMS>& maxBounds) {
     Rect r;
     for (int i = 0; i < KD_DIMS; i++) {
@@ -157,7 +138,6 @@ Rect arrayToRect(const array<double, KD_DIMS>& minBounds, const array<double, KD
     return r;
 }
 
-// Convert array to QuadRect for Quadtree
 QuadRect arrayToQuadRect(const array<double, KD_DIMS>& minBounds, const array<double, KD_DIMS>& maxBounds) {
     QuadRect qr;
     for (int i = 0; i < Q_K; i++) {
@@ -168,7 +148,6 @@ QuadRect arrayToQuadRect(const array<double, KD_DIMS>& minBounds, const array<do
 }
 
 int main() {
-    // Load movies from CSV file
     cout << "Loading movies from CSV..." << endl;
     vector<Movie> movies = loadMoviesFromCSV("data_movies_clean.csv");
     
@@ -179,17 +158,16 @@ int main() {
     
     cout << "Loaded " << movies.size() << " movies successfully.\n" << endl;
     
-    // Prepare ID lookup map for KD-Tree results
+    // Prepare ID lookup for KD-Tree
     unordered_map<int, Movie*> movieById;
     movieById.reserve(movies.size());
-    for (auto& movie : movies) {
-        movieById[movie.id] = &movie;
-    }
+    for (auto& movie : movies) movieById[movie.id] = &movie;
     
-    // Tree instances (built on demand)
+    // Tree pointers
     RTree* rtree = nullptr;
     KDTree* kdtree = nullptr;
     Quadtree* qtree = nullptr;
+    RangeTree* rangeTree = nullptr; // Added Range Tree
     
     bool running = true;
     
@@ -201,140 +179,153 @@ int main() {
         cout << "║  1. Use R-Tree                         ║" << endl;
         cout << "║  2. Use KD-Tree                        ║" << endl;
         cout << "║  3. Use Quadtree (Hyperoctree)         ║" << endl;
-        cout << "║  4. Compare all three                  ║" << endl;
-        cout << "║  5. Exit                               ║" << endl;
+        cout << "║  4. Use Range Tree                     ║" << endl;
+        cout << "║  5. Compare ALL Algorithms             ║" << endl;
+        cout << "║  6. Exit                               ║" << endl;
         cout << "╚════════════════════════════════════════╝" << endl;
-        cout << "Enter your choice (1-5): ";
+        cout << "Enter your choice (1-6): ";
         
         int treeChoice;
         cin >> treeChoice;
         
-        if (treeChoice == 5) {
+        if (treeChoice == 6) {
             cout << "Exiting..." << endl;
             running = false;
             break;
         }
         
-        if (treeChoice < 1 || treeChoice > 4) {
+        if (treeChoice < 1 || treeChoice > 5) {
             cout << "Invalid choice. Please try again." << endl;
             continue;
         }
         
-        // Build trees if needed
-        if ((treeChoice == 1 || treeChoice == 4) && rtree == nullptr) {
+        // --- Build Trees On Demand ---
+        
+        // R-Tree
+        if ((treeChoice == 1 || treeChoice == 5) && rtree == nullptr) {
             auto start = chrono::high_resolution_clock::now();
             rtree = new RTree();
             rtree->build(movies);
             auto end = chrono::high_resolution_clock::now();
-            auto ms = chrono::duration_cast<chrono::milliseconds>(end - start).count();
-            cout << "R-Tree built in " << ms << " ms." << endl;
+            cout << "R-Tree built in " << chrono::duration_cast<chrono::milliseconds>(end - start).count() << " ms." << endl;
         }
         
-        if ((treeChoice == 2 || treeChoice == 4) && kdtree == nullptr) {
+        // KD-Tree
+        if ((treeChoice == 2 || treeChoice == 5) && kdtree == nullptr) {
             auto start = chrono::high_resolution_clock::now();
             kdtree = new KDTree();
             kdtree->build(movies);
             auto end = chrono::high_resolution_clock::now();
-            auto ms = chrono::duration_cast<chrono::milliseconds>(end - start).count();
-            cout << "KD-Tree built in " << ms << " ms." << endl;
+            cout << "KD-Tree built in " << chrono::duration_cast<chrono::milliseconds>(end - start).count() << " ms." << endl;
         }
         
-        // Build Quadtree if needed
-        if ((treeChoice == 3 || treeChoice == 4) && qtree == nullptr) {
+        // Quadtree
+        if ((treeChoice == 3 || treeChoice == 5) && qtree == nullptr) {
             auto start = chrono::high_resolution_clock::now();
             qtree = new Quadtree();
             qtree->build(movies);
             auto end = chrono::high_resolution_clock::now();
-            auto ms = chrono::duration_cast<chrono::milliseconds>(end - start).count();
-            cout << "Quadtree built in " << ms << " ms." << endl;
+            cout << "Quadtree built in " << chrono::duration_cast<chrono::milliseconds>(end - start).count() << " ms." << endl;
+        }
+
+        // Range Tree
+        if ((treeChoice == 4 || treeChoice == 5) && rangeTree == nullptr) {
+            auto start = chrono::high_resolution_clock::now();
+            rangeTree = new RangeTree();
+            rangeTree->build(movies);
+            auto end = chrono::high_resolution_clock::now();
+            cout << "Range Tree built in " << chrono::duration_cast<chrono::milliseconds>(end - start).count() << " ms." << endl;
         }
         
-        // Search loop for selected tree(s)
+        // --- Search Loop ---
         bool searching = true;
         while (searching) {
-            auto [minBounds, maxBounds] = getUserQueryBounds();
+            auto [minBoundsArr, maxBoundsArr] = getUserQueryBounds();
             
-            // Check if user wants to go back
-            if (minBounds[0] == -1) {
+            if (minBoundsArr[0] == -1) {
                 searching = false;
                 continue;
             }
             
+            // Convert to raw pointers for Range Tree (if needed) or simple access
+            double minB[KD_DIMS], maxB[KD_DIMS];
+            for(int i=0; i<KD_DIMS; ++i) { minB[i] = minBoundsArr[i]; maxB[i] = maxBoundsArr[i]; }
+
             cout << "\n=== Searching for Candidates ===" << endl;
             
-            if (treeChoice == 1) {
-                // R-Tree only
-                Rect query = arrayToRect(minBounds, maxBounds);
+            if (treeChoice == 1) { // R-Tree
+                Rect query = arrayToRect(minBoundsArr, maxBoundsArr);
                 auto start = chrono::high_resolution_clock::now();
                 vector<Movie*> results = rtree->search(query);
                 auto end = chrono::high_resolution_clock::now();
-                auto ms = chrono::duration_cast<chrono::milliseconds>(end - start).count();
-                
-                cout << "\n[R-Tree] Search completed in " << ms << " ms." << endl;
+                cout << "\n[R-Tree] Search completed in " << chrono::duration_cast<chrono::milliseconds>(end - start).count() << " ms." << endl;
                 displayResults(results);
             }
-            else if (treeChoice == 2) {
-                // KD-Tree only
+            else if (treeChoice == 2) { // KD-Tree
                 auto start = chrono::high_resolution_clock::now();
-                vector<Movie*> results = kdtree->search(minBounds, maxBounds, movieById);
+                vector<Movie*> results = kdtree->search(minBoundsArr, maxBoundsArr, movieById);
                 auto end = chrono::high_resolution_clock::now();
-                auto ms = chrono::duration_cast<chrono::milliseconds>(end - start).count();
-                
-                cout << "\n[KD-Tree] Search completed in " << ms << " ms." << endl;
+                cout << "\n[KD-Tree] Search completed in " << chrono::duration_cast<chrono::milliseconds>(end - start).count() << " ms." << endl;
                 displayResults(results);
             }
-            else if (treeChoice == 3) {
-                // Quadtree only
-                QuadRect query = arrayToQuadRect(minBounds, maxBounds);
+            else if (treeChoice == 3) { // Quadtree
+                QuadRect query = arrayToQuadRect(minBoundsArr, maxBoundsArr);
                 auto start = chrono::high_resolution_clock::now();
                 vector<Movie*> results = qtree->search(query);
                 auto end = chrono::high_resolution_clock::now();
-                auto ms = chrono::duration_cast<chrono::milliseconds>(end - start).count();
-
-                cout << "\n[Quadtree] Search completed in " << ms << " ms." << endl;
+                cout << "\n[Quadtree] Search completed in " << chrono::duration_cast<chrono::milliseconds>(end - start).count() << " ms." << endl;
                 displayResults(results);
             }
-            else if (treeChoice == 4) {
-                // Compare all three trees
-                Rect rQuery = arrayToRect(minBounds, maxBounds);
-                QuadRect qQuery = arrayToQuadRect(minBounds, maxBounds);
+            else if (treeChoice == 4) { // Range Tree
+                auto start = chrono::high_resolution_clock::now();
+                vector<Movie*> results = rangeTree->search(minB, maxB);
+                auto end = chrono::high_resolution_clock::now();
+                cout << "\n[Range Tree] Search completed in " << chrono::duration_cast<chrono::milliseconds>(end - start).count() << " ms." << endl;
+                displayResults(results);
+            }
+            else if (treeChoice == 5) { // Compare All
+                Rect rQuery = arrayToRect(minBoundsArr, maxBoundsArr);
+                QuadRect qQuery = arrayToQuadRect(minBoundsArr, maxBoundsArr);
                 
-                // R-Tree search
-                auto rtreeStart = chrono::high_resolution_clock::now();
-                vector<Movie*> rtreeResults = rtree->search(rQuery);
-                auto rtreeEnd = chrono::high_resolution_clock::now();
-                auto rtreeMs = chrono::duration_cast<chrono::milliseconds>(rtreeEnd - rtreeStart).count();
+                // R-Tree
+                auto start1 = chrono::high_resolution_clock::now();
+                auto res1 = rtree->search(rQuery);
+                auto ms1 = chrono::duration_cast<chrono::milliseconds>(chrono::high_resolution_clock::now() - start1).count();
                 
-                // KD-Tree search
-                auto kdtreeStart = chrono::high_resolution_clock::now();
-                vector<Movie*> kdtreeResults = kdtree->search(minBounds, maxBounds, movieById);
-                auto kdtreeEnd = chrono::high_resolution_clock::now();
-                auto kdtreeMs = chrono::duration_cast<chrono::milliseconds>(kdtreeEnd - kdtreeStart).count();
+                // KD-Tree
+                auto start2 = chrono::high_resolution_clock::now();
+                auto res2 = kdtree->search(minBoundsArr, maxBoundsArr, movieById);
+                auto ms2 = chrono::duration_cast<chrono::milliseconds>(chrono::high_resolution_clock::now() - start2).count();
 
-                // Quadtree search
-                auto qtreeStart = chrono::high_resolution_clock::now();
-                vector<Movie*> qtreeResults = qtree->search(qQuery);
-                auto qtreeEnd = chrono::high_resolution_clock::now();
-                auto qtreeMs = chrono::duration_cast<chrono::milliseconds>(qtreeEnd - qtreeStart).count();
+                // Quadtree
+                auto start3 = chrono::high_resolution_clock::now();
+                auto res3 = qtree->search(qQuery);
+                auto ms3 = chrono::duration_cast<chrono::milliseconds>(chrono::high_resolution_clock::now() - start3).count();
                 
-                cout << "\n╔════════════════════════════════════════╗" << endl;
-                cout << "║         Performance Comparison         ║" << endl;
-                cout << "╠════════════════════════════════════════╣" << endl;
-                cout << "║  R-Tree:    " << rtreeMs  << " ms, " << rtreeResults.size()  << " results" << endl;
-                cout << "║  KD-Tree:   " << kdtreeMs << " ms, " << kdtreeResults.size() << " results" << endl;
-                cout << "║  Quadtree:  " << qtreeMs  << " ms, " << qtreeResults.size()  << " results" << endl;
-                cout << "╚════════════════════════════════════════╝" << endl;
+                // Range Tree
+                auto start4 = chrono::high_resolution_clock::now();
+                auto res4 = rangeTree->search(minB, maxB);
+                auto ms4 = chrono::duration_cast<chrono::milliseconds>(chrono::high_resolution_clock::now() - start4).count();
                 
-                // Display KD-Tree results as the detailed view
-                displayResults(kdtreeResults);
+                cout << "\n╔═══════════════════════════════════════════════════╗" << endl;
+                cout << "║               Performance Comparison              ║" << endl;
+                cout << "╠═══════════════════════════════════════════════════╣" << endl;
+                cout << "║  R-Tree:     " << ms1 << " ms, " << res1.size() << " results" << endl;
+                cout << "║  KD-Tree:    " << ms2 << " ms, " << res2.size() << " results" << endl;
+                cout << "║  Quadtree:   " << ms3 << " ms, " << res3.size() << " results" << endl;
+                cout << "║  Range Tree: " << ms4 << " ms, " << res4.size() << " results" << endl;
+                cout << "╚═══════════════════════════════════════════════════╝" << endl;
+                
+                displayResults(res4); // Display results from Range Tree (or any)
             }
         }
     }
     
     // Cleanup
-    if (rtree != nullptr) delete rtree;
-    if (kdtree != nullptr) delete kdtree;
-    if (qtree != nullptr) delete qtree;
+    if (rtree) delete rtree;
+    if (kdtree) delete kdtree;
+    if (qtree) delete qtree;
+    if (rangeTree) delete rangeTree;
     
     return 0;
 }
