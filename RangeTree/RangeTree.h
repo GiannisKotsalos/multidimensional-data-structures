@@ -8,7 +8,7 @@
 
 using namespace std;
 
-// Dimensions: 0:Budget, 1:Revenue, 2:Runtime, 3:Popularity, 4:Vote
+// Dimensions: 0:Budget, 1:Revenue, 2:Runtime, 3:Release Year, 4:Vote
 const int RT_TOTAL_DIMS = 5;
 
 // We index the first 2 dimensions (Budget, Revenue) using trees.

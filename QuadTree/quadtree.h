@@ -10,7 +10,7 @@
 // --- ISOLATION DEFINITIONS ---
 // We define our own constants and structs to avoid conflicts with R-Tree
 
-// Dimensions (Budget, Revenue, Runtime, Popularity, VoteAvg)
+// Dimensions (Budget, Revenue, Runtime, Release Year, VoteAvg)
 const int Q_K = 5; 
 const int Q_BUCKET_SIZE = 40;
 const int NUM_CHILDREN = 32; // 2^5

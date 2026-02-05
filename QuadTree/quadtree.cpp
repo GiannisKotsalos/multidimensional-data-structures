@@ -10,7 +10,7 @@ array<double, Q_K> getMovieCoords(const Movie* m) {
         m->budget, 
         m->revenue, 
         static_cast<double>(m->runtime), 
-        m->popularity, 
+        static_cast<double>(m->release_year), 
         m->vote_average
     };
 }

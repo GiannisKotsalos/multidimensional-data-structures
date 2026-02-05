@@ -14,7 +14,7 @@
 using namespace std;
 
 // Display results helper function
-void displayResults(const vector<Movie*>& results, size_t limit = 20) {
+void displayResults(const vector<Movie*>& results, size_t limit = 10) {
     cout << "\nFound " << results.size() << " candidate(s) matching your criteria:" << endl;
     cout << "----------------------------------------" << endl;
     
@@ -26,7 +26,7 @@ void displayResults(const vector<Movie*>& results, size_t limit = 20) {
         cout << "   Budget: $" << movie->budget << endl;
         cout << "   Revenue: $" << movie->revenue << endl;
         cout << "   Runtime: " << movie->runtime << " minutes" << endl;
-        cout << "   Popularity: " << movie->popularity << endl;
+        cout << "   Release Year: " << movie->release_year << endl;
         cout << "   Vote Average: " << movie->vote_average << "/10" << endl;
     }
     
@@ -42,7 +42,7 @@ pair<array<double, KD_DIMS>, array<double, KD_DIMS>> getUserQueryBounds() {
     array<double, KD_DIMS> minBounds = {0.0, 0.0, 0.0, 0.0, 0.0};
     array<double, KD_DIMS> maxBounds = {1e15, 1e15, 9999.0, 9999.0, 10.0};
     
-    string attrNames[KD_DIMS] = {"Budget", "Revenue", "Runtime", "Popularity", "Vote Average"};
+    string attrNames[KD_DIMS] = {"Budget", "Revenue", "Runtime", "Release Year", "Vote Average"};
     
     int choice;
     cout << "\n========================================" << endl;
@@ -51,7 +51,7 @@ pair<array<double, KD_DIMS>, array<double, KD_DIMS>> getUserQueryBounds() {
     cout << "1. Filter by Budget" << endl;
     cout << "2. Filter by Revenue" << endl;
     cout << "3. Filter by Runtime" << endl;
-    cout << "4. Filter by Popularity" << endl;
+    cout << "4. Filter by Release Year" << endl;
     cout << "5. Filter by Vote Average" << endl;
     cout << "6. Filter by Multiple Criteria" << endl;
     cout << "7. Back to Main Menu" << endl;
@@ -89,12 +89,13 @@ pair<array<double, KD_DIMS>, array<double, KD_DIMS>> getUserQueryBounds() {
             minBounds[2] = static_cast<double>(minVal); maxBounds[2] = static_cast<double>(maxVal);
             break;
         }
-        case 4: { // Popularity
-            double minVal, maxVal;
-            cout << "\n--- Filter by Popularity ---" << endl;
-            cout << "Enter minimum popularity: "; cin >> minVal;
-            cout << "Enter maximum popularity: "; cin >> maxVal;
-            minBounds[3] = minVal; maxBounds[3] = maxVal;
+        case 4: { // Release Year
+            int minVal, maxVal;
+            cout << "\n--- Filter by Release Year ---" << endl;
+            cout << "Enter minimum release year: "; cin >> minVal;
+            cout << "Enter maximum release year: "; cin >> maxVal;
+            minBounds[3] = static_cast<double>(minVal);
+            maxBounds[3] = static_cast<double>(maxVal);
             break;
         }
         case 5: { // Vote Average

@@ -38,7 +38,7 @@ KDPoint movieToKDPoint(const Movie& movie) {
     coords[0] = movie.budget;
     coords[1] = movie.revenue;
     coords[2] = static_cast<double>(movie.runtime);
-    coords[3] = movie.popularity;
+    coords[3] = static_cast<double>(movie.release_year);
     coords[4] = movie.vote_average;
     
     return KDPoint(coords, movie.id);

@@ -35,7 +35,7 @@ struct KDPoint {
 // coord[0]: Budget
 // coord[1]: Revenue  
 // coord[2]: Runtime
-// coord[3]: Popularity
+// coord[3]: Release Year
 // coord[4]: Vote Average
 KDPoint movieToKDPoint(const Movie& movie);
 

@@ -56,6 +56,14 @@ vector<string> parseList(const string &s) {
     return result;
 }
 
+int parseReleaseYear(const string& date) {
+    if (date.size() < 4) return 0;
+    for (int i = 0; i < 4; ++i) {
+        if (!isdigit(static_cast<unsigned char>(date[i]))) return 0;
+    }
+    return stoi(date.substr(0, 4));
+}
+
 vector<Movie> loadMoviesFromCSV(const string &filename) {
     vector<Movie> movies;
     ifstream file(filename);
@@ -86,6 +94,7 @@ vector<Movie> loadMoviesFromCSV(const string &filename) {
         m.original_language = fields[i++];
         m.origin_country = parseList(fields[i++]);
         m.release_date = fields[i++];
+        m.release_year = parseReleaseYear(m.release_date);
         m.genre_names = parseList(fields[i++]);
         m.production_company_names = parseList(fields[i++]);
         m.budget = stod(fields[i++]);

@@ -22,7 +22,7 @@ double RangeTree::getVal(const Movie* m, int dim) {
         case 0: return m->budget;
         case 1: return m->revenue;
         case 2: return (double)m->runtime;
-        case 3: return m->popularity;
+        case 3: return (double)m->release_year;
         case 4: return m->vote_average;
         default: return 0.0;
     }
@@ -191,7 +191,7 @@ void RangeTree::searchRevenueTree(RangeNode* node, const double minBounds[], con
 // LINEAR FILTER (Dimensions 2, 3, 4)
 bool RangeTree::isMatchRest(Movie* m, const double minBounds[], const double maxBounds[]) {
     // We already checked 0 (Budget) and 1 (Revenue) via the trees.
-    // Now check 2 (Runtime), 3 (Popularity), 4 (Vote).
+    // Now check 2 (Runtime), 3 (Release Year), 4 (Vote).
     for (int i = 2; i < RT_TOTAL_DIMS; i++) {
         double v = getVal(m, i);
         if (v < minBounds[i] || v > maxBounds[i]) return false;

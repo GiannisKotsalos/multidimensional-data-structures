@@ -9,7 +9,7 @@ void getCoords(const Movie* m, double coords[K]) {
     coords[0] = m->budget;
     coords[1] = m->revenue;
     coords[2] = (double)m->runtime;
-    coords[3] = m->popularity;
+    coords[3] = (double)m->release_year;
     coords[4] = m->vote_average;
 }
 

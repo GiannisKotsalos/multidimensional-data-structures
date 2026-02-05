@@ -13,6 +13,7 @@ struct Movie {
     string original_language;
     vector<string> origin_country;
     string release_date;
+    int release_year;
     vector<string> genre_names;
     vector<string> production_company_names;
     double budget;
