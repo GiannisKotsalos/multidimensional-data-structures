@@ -7,7 +7,7 @@
 #include <iomanip> // Required for setprecision
 #include "Movie.h"
 #include "FileReader.h"
-#include "LSH.h"   // NEW: Include the LSH header
+#include "LSH.h"   // Include the LSH header
 #include "Rtree/Rtree.h"
 #include "KDtree/KDTree.h"
 #include "QuadTree/quadtree.h"
@@ -41,7 +41,7 @@ void displayResults(const vector<Movie*>& results, size_t limit = 10) {
     cout << "\nTotal candidates found: " << results.size() << endl;
 }
 
-// NEW: Display results from LSH Search (Phase 2)
+// Display results from LSH Search (Phase 2)
 void displayLSHResults(const vector<pair<Movie*, double>>& results) {
     cout << "\nFound " << results.size() << " similar item(s) via LSH:" << endl;
     cout << "----------------------------------------" << endl;
@@ -67,17 +67,17 @@ pair<array<double, KD_DIMS>, array<double, KD_DIMS>> getUserQueryBounds() {
     string attrNames[KD_DIMS] = {"Budget", "Revenue", "Runtime", "Release Year", "Vote Average"};
     
     int choice;
-    cout << "\n========================================" << endl;
-    cout << "        Search Filter Menu" << endl;
-    cout << "========================================" << endl;
-    cout << "1. Filter by Budget" << endl;
-    cout << "2. Filter by Revenue" << endl;
-    cout << "3. Filter by Runtime" << endl;
-    cout << "4. Filter by Release Year" << endl;
-    cout << "5. Filter by Vote Average" << endl;
-    cout << "6. Filter by Multiple Criteria" << endl;
-    cout << "7. Back to Main Menu" << endl;
-    cout << "========================================" << endl;
+cout << "\n╔══════════════════════════════════════╗" << endl;
+    cout << "║          Search Filter Menu          ║" << endl;
+    cout << "╠══════════════════════════════════════╣" << endl;
+    cout << "║  1. Filter by Budget                 ║" << endl;
+    cout << "║  2. Filter by Revenue                ║" << endl;
+    cout << "║  3. Filter by Runtime                ║" << endl;
+    cout << "║  4. Filter by Release Year           ║" << endl;
+    cout << "║  5. Filter by Vote Average           ║" << endl;
+    cout << "║  6. Filter by Multiple Criteria      ║" << endl;
+    cout << "║  7. Back to Action Menu              ║" << endl;
+    cout << "╚══════════════════════════════════════╝" << endl;
     cout << "Enter your choice (1-7): ";
     cin >> choice;
     
@@ -201,8 +201,8 @@ int main() {
     
     while (running) {
         cout << "\n╔════════════════════════════════════════╗" << endl;
-        cout << "║     Multi-Dimensional Data Structures  ║" << endl;
-        cout << "║          Movie Search System           ║" << endl;
+        cout << "║    Multi-Dimensional Data Structures   ║" << endl;
+        cout << "║         Movie Search System            ║" << endl;
         cout << "╠════════════════════════════════════════╣" << endl;
         cout << "║  1. Use R-Tree                         ║" << endl;
         cout << "║  2. Use KD-Tree                        ║" << endl;
@@ -265,140 +265,175 @@ int main() {
             cout << "Range Tree built in " << chrono::duration_cast<chrono::milliseconds>(end - start).count() << " ms." << endl;
         }
         
-        // --- Search Loop ---
-        bool searching = true;
-        while (searching) {
-            auto [minBoundsArr, maxBoundsArr] = getUserQueryBounds();
+        // --- Action Menu Loop ---
+        bool inActionMenu = true;
+        while (inActionMenu) {
+            cout << "\n╔════════════════════════════════════════╗" << endl;
+            cout << "║          Tree Operations Menu          ║" << endl;
+            cout << "╠════════════════════════════════════════╣" << endl;
+            cout << "║  1. Search                             ║" << endl;
+            cout << "║  2. Insert (Do nothing)                ║" << endl;
+            cout << "║  3. Update (Do nothing)                ║" << endl;
+            cout << "║  4. Delete (Do nothing)                ║" << endl;
+            cout << "║  5. Back to Algorithm Selection        ║" << endl;
+            cout << "╚════════════════════════════════════════╝" << endl;
+            cout << "Enter your choice (1-5): ";
             
-            if (minBoundsArr[0] == -1) {
-                searching = false;
-                continue;
-            }
-            
-            // Convert to raw pointers for Range Tree (if needed) or simple access
-            double minB[KD_DIMS], maxB[KD_DIMS];
-            for(int i=0; i<KD_DIMS; ++i) { minB[i] = minBoundsArr[i]; maxB[i] = maxBoundsArr[i]; }
 
-            cout << "\n=== Phase 1: Range Search (Filtering) ===" << endl;
-            vector<Movie*> phase1Results;
-            
-            if (treeChoice == 1) { // R-Tree
-                Rect query = arrayToRect(minBoundsArr, maxBoundsArr);
-                auto start = chrono::high_resolution_clock::now();
-                phase1Results = rtree->search(query);
-                auto end = chrono::high_resolution_clock::now();
-                cout << "\n[R-Tree] Search completed in " << chrono::duration_cast<chrono::milliseconds>(end - start).count() << " ms." << endl;
-            }
-            else if (treeChoice == 2) { // KD-Tree
-                auto start = chrono::high_resolution_clock::now();
-                phase1Results = kdtree->search(minBoundsArr, maxBoundsArr, movieById);
-                auto end = chrono::high_resolution_clock::now();
-                cout << "\n[KD-Tree] Search completed in " << chrono::duration_cast<chrono::milliseconds>(end - start).count() << " ms." << endl;
-            }
-            else if (treeChoice == 3) { // Quadtree
-                QuadRect query = arrayToQuadRect(minBoundsArr, maxBoundsArr);
-                auto start = chrono::high_resolution_clock::now();
-                phase1Results = qtree->search(query);
-                auto end = chrono::high_resolution_clock::now();
-                cout << "\n[Quadtree] Search completed in " << chrono::duration_cast<chrono::milliseconds>(end - start).count() << " ms." << endl;
-            }
-            else if (treeChoice == 4) { // Range Tree
-                auto start = chrono::high_resolution_clock::now();
-                phase1Results = rangeTree->search(minB, maxB);
-                auto end = chrono::high_resolution_clock::now();
-                cout << "\n[Range Tree] Search completed in " << chrono::duration_cast<chrono::milliseconds>(end - start).count() << " ms." << endl;
-            }
-            else if (treeChoice == 5) { // Compare All
-                Rect rQuery = arrayToRect(minBoundsArr, maxBoundsArr);
-                QuadRect qQuery = arrayToQuadRect(minBoundsArr, maxBoundsArr);
-                
-                // R-Tree
-                auto start1 = chrono::high_resolution_clock::now();
-                auto res1 = rtree->search(rQuery);
-                auto ms1 = chrono::duration_cast<chrono::milliseconds>(chrono::high_resolution_clock::now() - start1).count();
-                
-                // KD-Tree
-                auto start2 = chrono::high_resolution_clock::now();
-                auto res2 = kdtree->search(minBoundsArr, maxBoundsArr, movieById);
-                auto ms2 = chrono::duration_cast<chrono::milliseconds>(chrono::high_resolution_clock::now() - start2).count();
 
-                // Quadtree
-                auto start3 = chrono::high_resolution_clock::now();
-                auto res3 = qtree->search(qQuery);
-                auto ms3 = chrono::duration_cast<chrono::milliseconds>(chrono::high_resolution_clock::now() - start3).count();
-                
-                // Range Tree
-                auto start4 = chrono::high_resolution_clock::now();
-                auto res4 = rangeTree->search(minB, maxB);
-                auto ms4 = chrono::duration_cast<chrono::milliseconds>(chrono::high_resolution_clock::now() - start4).count();
-                
-                cout << "\n╔═══════════════════════════════════════════════════╗" << endl;
-                cout << "║               Performance Comparison              ║" << endl;
-                cout << "╠═══════════════════════════════════════════════════╣" << endl;
-                cout << "║  R-Tree:     " << ms1 << " ms, " << res1.size() << " results" << endl;
-                cout << "║  KD-Tree:    " << ms2 << " ms, " << res2.size() << " results" << endl;
-                cout << "║  Quadtree:   " << ms3 << " ms, " << res3.size() << " results" << endl;
-                cout << "║  Range Tree: " << ms4 << " ms, " << res4.size() << " results" << endl;
-                cout << "╚═══════════════════════════════════════════════════╝" << endl;
-                
-                // Use one of the result sets for Phase 2 (they should be identical in content)
-                phase1Results = res4; 
+            int actionChoice;
+            cin >> actionChoice;
+
+            if (actionChoice == 5) {
+                inActionMenu = false;
+                continue; // Return to Algorithm Selection
             }
-            
-            // Display Phase 1 results
-            displayResults(phase1Results);
-            
-            // ----------------------------------------------------
-            // PHASE 2: LSH SIMILARITY SEARCH
-            // ----------------------------------------------------
-            if (!phase1Results.empty()) {
-                char useLSH;
-                cout << "\nWould you like to refine these results using LSH Similarity Search? (y/n): ";
-                cin >> useLSH;
-                
-                if (useLSH == 'y' || useLSH == 'Y') {
-                    int attrChoice;
-                    cout << "==============================================" <<endl;
-                    cout << " Select Textual Attribute for Similarity:" << endl;
-                    cout << "==============================================" <<endl;
-                    cout << "1. Movie Title" << endl;
-                    cout << "2. Production Company Names" << endl;
-                    cout << "3. Genres" << endl;
-                    cout << "==============================================" <<endl;
-                    cout << "Choice: ";
-                    cin >> attrChoice;
+
+            if (actionChoice == 1) {
+                // --- Search Logic (Existing functionality) ---
+                bool searching = true;
+                while (searching) {
+                    auto [minBoundsArr, maxBoundsArr] = getUserQueryBounds();
                     
-                    if (attrChoice >= 1 && attrChoice <= 3) {
-                        cout << "Building LSH Index on " << phase1Results.size() << " items..." << endl;
-                        auto startLSH = chrono::high_resolution_clock::now();
-                        
-                        // 1. Build Index on the SUBSET
-                        lshSystem.buildIndex(phase1Results, attrChoice);
-                        
-                        auto endLSH = chrono::high_resolution_clock::now();
-                        cout << "LSH Index built in " 
-                             << chrono::duration_cast<chrono::microseconds>(endLSH - startLSH).count() 
-                             << " microseconds." << endl;
-                        
-                        // 2. Get User Query String
-                        string queryStr;
-                        cout << "\nEnter text to search for: ";
-                        cin.ignore(); 
-                        getline(cin, queryStr);
-                        
-                        double threshold = 0.1; // 10% similarity
-                        cout << "Searching (Threshold: " << threshold << ")..." << endl;
-                        
-                        // 3. Search LSH
-                        auto lshResults = lshSystem.search(queryStr, threshold);
-                        
-                        displayLSHResults(lshResults);
-                    } else {
-                        cout << "Invalid attribute choice." << endl;
+                    if (minBoundsArr[0] == -1) {
+                        searching = false;
+                        continue; // Return to Action Menu
                     }
-                }
+                    
+                    // Convert to raw pointers for Range Tree (if needed) or simple access
+                    double minB[KD_DIMS], maxB[KD_DIMS];
+                    for(int i=0; i<KD_DIMS; ++i) { minB[i] = minBoundsArr[i]; maxB[i] = maxBoundsArr[i]; }
+
+                    cout << "\n=== Phase 1: Range Search (Filtering) ===" << endl;
+                    vector<Movie*> phase1Results;
+                    
+                    if (treeChoice == 1) { // R-Tree
+                        Rect query = arrayToRect(minBoundsArr, maxBoundsArr);
+                        auto start = chrono::high_resolution_clock::now();
+                        phase1Results = rtree->search(query);
+                        auto end = chrono::high_resolution_clock::now();
+                        cout << "\n[R-Tree] Search completed in " << chrono::duration_cast<chrono::milliseconds>(end - start).count() << " ms." << endl;
+                    }
+                    else if (treeChoice == 2) { // KD-Tree
+                        auto start = chrono::high_resolution_clock::now();
+                        phase1Results = kdtree->search(minBoundsArr, maxBoundsArr, movieById);
+                        auto end = chrono::high_resolution_clock::now();
+                        cout << "\n[KD-Tree] Search completed in " << chrono::duration_cast<chrono::milliseconds>(end - start).count() << " ms." << endl;
+                    }
+                    else if (treeChoice == 3) { // Quadtree
+                        QuadRect query = arrayToQuadRect(minBoundsArr, maxBoundsArr);
+                        auto start = chrono::high_resolution_clock::now();
+                        phase1Results = qtree->search(query);
+                        auto end = chrono::high_resolution_clock::now();
+                        cout << "\n[Quadtree] Search completed in " << chrono::duration_cast<chrono::milliseconds>(end - start).count() << " ms." << endl;
+                    }
+                    else if (treeChoice == 4) { // Range Tree
+                        auto start = chrono::high_resolution_clock::now();
+                        phase1Results = rangeTree->search(minB, maxB);
+                        auto end = chrono::high_resolution_clock::now();
+                        cout << "\n[Range Tree] Search completed in " << chrono::duration_cast<chrono::milliseconds>(end - start).count() << " ms." << endl;
+                    }
+                    else if (treeChoice == 5) { // Compare All
+                        Rect rQuery = arrayToRect(minBoundsArr, maxBoundsArr);
+                        QuadRect qQuery = arrayToQuadRect(minBoundsArr, maxBoundsArr);
+                        
+                        // R-Tree
+                        auto start1 = chrono::high_resolution_clock::now();
+                        auto res1 = rtree->search(rQuery);
+                        auto ms1 = chrono::duration_cast<chrono::milliseconds>(chrono::high_resolution_clock::now() - start1).count();
+                        
+                        // KD-Tree
+                        auto start2 = chrono::high_resolution_clock::now();
+                        auto res2 = kdtree->search(minBoundsArr, maxBoundsArr, movieById);
+                        auto ms2 = chrono::duration_cast<chrono::milliseconds>(chrono::high_resolution_clock::now() - start2).count();
+
+                        // Quadtree
+                        auto start3 = chrono::high_resolution_clock::now();
+                        auto res3 = qtree->search(qQuery);
+                        auto ms3 = chrono::duration_cast<chrono::milliseconds>(chrono::high_resolution_clock::now() - start3).count();
+                        
+                        // Range Tree
+                        auto start4 = chrono::high_resolution_clock::now();
+                        auto res4 = rangeTree->search(minB, maxB);
+                        auto ms4 = chrono::duration_cast<chrono::milliseconds>(chrono::high_resolution_clock::now() - start4).count();
+                        
+                        cout << "\n╔═══════════════════════════════════════════════════╗" << endl;
+                        cout << "║               Performance Comparison              ║" << endl;
+                        cout << "╠═══════════════════════════════════════════════════╣" << endl;
+                        cout << "║  R-Tree:     " << ms1 << " ms, " << res1.size() << " results" << endl;
+                        cout << "║  KD-Tree:    " << ms2 << " ms, " << res2.size() << " results" << endl;
+                        cout << "║  Quadtree:   " << ms3 << " ms, " << res3.size() << " results" << endl;
+                        cout << "║  Range Tree: " << ms4 << " ms, " << res4.size() << " results" << endl;
+                        cout << "╚═══════════════════════════════════════════════════╝" << endl;
+                        
+                        // Use one of the result sets for Phase 2 (they should be identical in content)
+                        phase1Results = res4; 
+                    }
+                    
+                    // Display Phase 1 results
+                    displayResults(phase1Results);
+                    
+                    // ----------------------------------------------------
+                    // PHASE 2: LSH SIMILARITY SEARCH
+                    // ----------------------------------------------------
+                    if (!phase1Results.empty()) {
+                        char useLSH;
+                        cout << "\nWould you like to refine these results using LSH Similarity Search? (y/n): ";
+                        cin >> useLSH;
+                        
+                        if (useLSH == 'y' || useLSH == 'Y') {
+                            int attrChoice;
+                            cout << "==============================================" <<endl;
+                            cout << " Select Textual Attribute for Similarity:" << endl;
+                            cout << "==============================================" <<endl;
+                            cout << "1. Movie Title" << endl;
+                            cout << "2. Production Company Names" << endl;
+                            cout << "3. Genres" << endl;
+                            cout << "==============================================" <<endl;
+                            cout << "Choice: ";
+                            cin >> attrChoice;
+                            
+                            if (attrChoice >= 1 && attrChoice <= 3) {
+                                cout << "Building LSH Index on " << phase1Results.size() << " items..." << endl;
+                                auto startLSH = chrono::high_resolution_clock::now();
+                                
+                                // 1. Build Index on the SUBSET
+                                lshSystem.buildIndex(phase1Results, attrChoice);
+                                
+                                auto endLSH = chrono::high_resolution_clock::now();
+                                cout << "LSH Index built in " 
+                                     << chrono::duration_cast<chrono::microseconds>(endLSH - startLSH).count() 
+                                     << " microseconds." << endl;
+                                
+                                // 2. Get User Query String
+                                string queryStr;
+                                cout << "\nEnter text to search for: ";
+                                cin.ignore(); 
+                                getline(cin, queryStr);
+                                
+                                double threshold = 0.1; // 10% similarity
+                                cout << "Searching (Threshold: " << threshold << ")..." << endl;
+                                
+                                // 3. Search LSH
+                                auto lshResults = lshSystem.search(queryStr, threshold);
+                                
+                                displayLSHResults(lshResults);
+                            } else {
+                                cout << "Invalid attribute choice." << endl;
+                            }
+                        }
+                    }
+                } // End while(searching)
+            } 
+            else if (actionChoice == 2 || actionChoice == 3 || actionChoice == 4) {
+                // Insert, Update, Delete -> Do nothing as requested
+                cout << "\nAction selected but not implemented (NO-OP).\n" << endl;
+                // Loop continues, returning to Action Menu
+            } 
+            else {
+                cout << "Invalid choice. Please try again." << endl;
             }
-        }
+        } // End while(inActionMenu)
     }
     
     // Cleanup
