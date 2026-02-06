@@ -14,7 +14,8 @@ SRCS = Main.cpp \
        KDtree/KDTree.cpp \
        Rtree/Rtree.cpp \
        QuadTree/quadtree.cpp \
-       RangeTree/RangeTree.cpp
+       RangeTree/RangeTree.cpp \
+	   LSH.cpp
 
 # Μετατροπή των .cpp αρχείων σε .o (object files)
 OBJS = $(SRCS:.cpp=.o)

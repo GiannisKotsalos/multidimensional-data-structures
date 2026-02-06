@@ -4,8 +4,10 @@
 #include <chrono>
 #include <unordered_map>
 #include <array>
+#include <iomanip> // Required for setprecision
 #include "Movie.h"
 #include "FileReader.h"
+#include "LSH.h"   // NEW: Include the LSH header
 #include "Rtree/Rtree.h"
 #include "KDtree/KDTree.h"
 #include "QuadTree/quadtree.h"
@@ -13,7 +15,9 @@
 
 using namespace std;
 
-// Display results helper function
+// --- Helper Functions ---
+
+// Display results from Tree Search (Phase 1)
 void displayResults(const vector<Movie*>& results, size_t limit = 10) {
     cout << "\nFound " << results.size() << " candidate(s) matching your criteria:" << endl;
     cout << "----------------------------------------" << endl;
@@ -35,6 +39,24 @@ void displayResults(const vector<Movie*>& results, size_t limit = 10) {
     }
     
     cout << "\nTotal candidates found: " << results.size() << endl;
+}
+
+// NEW: Display results from LSH Search (Phase 2)
+void displayLSHResults(const vector<pair<Movie*, double>>& results) {
+    cout << "\nFound " << results.size() << " similar item(s) via LSH:" << endl;
+    cout << "----------------------------------------" << endl;
+    
+    size_t displayLimit = min((size_t)10, results.size());
+    for (size_t i = 0; i < displayLimit; i++) {
+        Movie* movie = results[i].first;
+        double sim = results[i].second;
+        cout << "\n" << (i+1) << ". [" << fixed << setprecision(1) << (sim * 100) << "% Match] " << movie->title << endl;
+        cout << "   Genres: ";
+        for(const auto& g : movie->genre_names) cout << g << " ";
+        cout << "\n   Companies: ";
+        for(const auto& c : movie->production_company_names) cout << c << "; ";
+        cout << endl;
+    }
 }
 
 // Get query bounds from user - returns pair of min/max arrays
@@ -129,7 +151,7 @@ pair<array<double, KD_DIMS>, array<double, KD_DIMS>> getUserQueryBounds() {
     return {minBounds, maxBounds};
 }
 
-// Helper Converters
+// Converters
 Rect arrayToRect(const array<double, KD_DIMS>& minBounds, const array<double, KD_DIMS>& maxBounds) {
     Rect r;
     for (int i = 0; i < KD_DIMS; i++) {
@@ -147,6 +169,8 @@ QuadRect arrayToQuadRect(const array<double, KD_DIMS>& minBounds, const array<do
     }
     return qr;
 }
+
+// --- MAIN FUNCTION ---
 
 int main() {
     cout << "Loading movies from CSV..." << endl;
@@ -168,7 +192,10 @@ int main() {
     RTree* rtree = nullptr;
     KDTree* kdtree = nullptr;
     Quadtree* qtree = nullptr;
-    RangeTree* rangeTree = nullptr; // Added Range Tree
+    RangeTree* rangeTree = nullptr;
+    
+    // LSH System
+    LSH lshSystem; // Initialize LSH system
     
     bool running = true;
     
@@ -252,37 +279,34 @@ int main() {
             double minB[KD_DIMS], maxB[KD_DIMS];
             for(int i=0; i<KD_DIMS; ++i) { minB[i] = minBoundsArr[i]; maxB[i] = maxBoundsArr[i]; }
 
-            cout << "\n=== Searching for Candidates ===" << endl;
+            cout << "\n=== Phase 1: Range Search (Filtering) ===" << endl;
+            vector<Movie*> phase1Results;
             
             if (treeChoice == 1) { // R-Tree
                 Rect query = arrayToRect(minBoundsArr, maxBoundsArr);
                 auto start = chrono::high_resolution_clock::now();
-                vector<Movie*> results = rtree->search(query);
+                phase1Results = rtree->search(query);
                 auto end = chrono::high_resolution_clock::now();
                 cout << "\n[R-Tree] Search completed in " << chrono::duration_cast<chrono::milliseconds>(end - start).count() << " ms." << endl;
-                displayResults(results);
             }
             else if (treeChoice == 2) { // KD-Tree
                 auto start = chrono::high_resolution_clock::now();
-                vector<Movie*> results = kdtree->search(minBoundsArr, maxBoundsArr, movieById);
+                phase1Results = kdtree->search(minBoundsArr, maxBoundsArr, movieById);
                 auto end = chrono::high_resolution_clock::now();
                 cout << "\n[KD-Tree] Search completed in " << chrono::duration_cast<chrono::milliseconds>(end - start).count() << " ms." << endl;
-                displayResults(results);
             }
             else if (treeChoice == 3) { // Quadtree
                 QuadRect query = arrayToQuadRect(minBoundsArr, maxBoundsArr);
                 auto start = chrono::high_resolution_clock::now();
-                vector<Movie*> results = qtree->search(query);
+                phase1Results = qtree->search(query);
                 auto end = chrono::high_resolution_clock::now();
                 cout << "\n[Quadtree] Search completed in " << chrono::duration_cast<chrono::milliseconds>(end - start).count() << " ms." << endl;
-                displayResults(results);
             }
             else if (treeChoice == 4) { // Range Tree
                 auto start = chrono::high_resolution_clock::now();
-                vector<Movie*> results = rangeTree->search(minB, maxB);
+                phase1Results = rangeTree->search(minB, maxB);
                 auto end = chrono::high_resolution_clock::now();
                 cout << "\n[Range Tree] Search completed in " << chrono::duration_cast<chrono::milliseconds>(end - start).count() << " ms." << endl;
-                displayResults(results);
             }
             else if (treeChoice == 5) { // Compare All
                 Rect rQuery = arrayToRect(minBoundsArr, maxBoundsArr);
@@ -317,7 +341,62 @@ int main() {
                 cout << "║  Range Tree: " << ms4 << " ms, " << res4.size() << " results" << endl;
                 cout << "╚═══════════════════════════════════════════════════╝" << endl;
                 
-                displayResults(res4); // Display results from Range Tree (or any)
+                // Use one of the result sets for Phase 2 (they should be identical in content)
+                phase1Results = res4; 
+            }
+            
+            // Display Phase 1 results
+            displayResults(phase1Results);
+            
+            // ----------------------------------------------------
+            // PHASE 2: LSH SIMILARITY SEARCH
+            // ----------------------------------------------------
+            if (!phase1Results.empty()) {
+                char useLSH;
+                cout << "\nWould you like to refine these results using LSH Similarity Search? (y/n): ";
+                cin >> useLSH;
+                
+                if (useLSH == 'y' || useLSH == 'Y') {
+                    int attrChoice;
+                    cout << "==============================================" <<endl;
+                    cout << " Select Textual Attribute for Similarity:" << endl;
+                    cout << "==============================================" <<endl;
+                    cout << "1. Movie Title" << endl;
+                    cout << "2. Production Company Names" << endl;
+                    cout << "3. Genres" << endl;
+                    cout << "==============================================" <<endl;
+                    cout << "Choice: ";
+                    cin >> attrChoice;
+                    
+                    if (attrChoice >= 1 && attrChoice <= 3) {
+                        cout << "Building LSH Index on " << phase1Results.size() << " items..." << endl;
+                        auto startLSH = chrono::high_resolution_clock::now();
+                        
+                        // 1. Build Index on the SUBSET
+                        lshSystem.buildIndex(phase1Results, attrChoice);
+                        
+                        auto endLSH = chrono::high_resolution_clock::now();
+                        cout << "LSH Index built in " 
+                             << chrono::duration_cast<chrono::microseconds>(endLSH - startLSH).count() 
+                             << " microseconds." << endl;
+                        
+                        // 2. Get User Query String
+                        string queryStr;
+                        cout << "\nEnter text to search for: ";
+                        cin.ignore(); 
+                        getline(cin, queryStr);
+                        
+                        double threshold = 0.1; // 10% similarity
+                        cout << "Searching (Threshold: " << threshold << ")..." << endl;
+                        
+                        // 3. Search LSH
+                        auto lshResults = lshSystem.search(queryStr, threshold);
+                        
+                        displayLSHResults(lshResults);
+                    } else {
+                        cout << "Invalid attribute choice." << endl;
+                    }
+                }
             }
         }
     }
