@@ -385,8 +385,8 @@ int main() {
             cout << "╠════════════════════════════════════════╣" << endl;
             cout << "║  1. Search                             ║" << endl;
             
-            // Enable dynamic ops for R-Tree (1), KD-Tree (2), and Quadtree (3)
-            if (treeChoice == 1 || treeChoice == 2 || treeChoice == 3) {
+            // Enable dynamic ops for R-Tree (1), KD-Tree (2), Quadtree (3), and Range Tree (4)
+            if (treeChoice >= 1 && treeChoice <= 4) {
                 cout << "║  2. Insert                             ║" << endl;
                 cout << "║  3. Update                             ║" << endl;
                 cout << "║  4. Delete                             ║" << endl;
@@ -402,7 +402,7 @@ int main() {
             int actionChoice;
             cin >> actionChoice;
 
-            if (treeChoice == 1 || treeChoice == 2 || treeChoice == 3) {
+            if (treeChoice >= 1 && treeChoice <= 4) {
                 if (actionChoice == 5) {
                     inActionMenu = false;
                     continue; // Return to Algorithm Selection
@@ -532,7 +532,7 @@ int main() {
                 } 
             } 
             // --- INSERT / UPDATE / DELETE OPERATIONS ---
-            else if ((treeChoice == 1 || treeChoice == 2 || treeChoice == 3) && (actionChoice == 2 || actionChoice == 3 || actionChoice == 4)) {
+            else if ((treeChoice >= 1 && treeChoice <= 4) && (actionChoice == 2 || actionChoice == 3 || actionChoice == 4)) {
                 
                 // --- INSERT ---
                 if (actionChoice == 2) { 
@@ -573,6 +573,9 @@ int main() {
                     } else if (treeChoice == 3) { // Quadtree Insert
                         qtree->insert(movieToInsert);
                         cout << "Inserted movie ID " << movieToInsert->id << " into Quadtree." << endl;
+                    } else if (treeChoice == 4) { // Range Tree Insert
+                        rangeTree->insert(movieToInsert);
+                        cout << "Inserted movie ID " << movieToInsert->id << " into Range Tree." << endl;
                     }
                 } 
                 // --- UPDATE ---
@@ -607,6 +610,12 @@ int main() {
                         } else {
                             cout << "Movie ID not found in Quadtree. Update failed." << endl;
                         }
+                    } else if (treeChoice == 4) { // Range Tree Update
+                        if (rangeTree->update(movie->id, movie)) {
+                            cout << "Updated movie ID " << movie->id << " in Range Tree." << endl;
+                        } else {
+                            cout << "Movie ID not found in Range Tree. Update failed." << endl;
+                        }
                     }
                 } 
                 // --- DELETE ---
@@ -635,6 +644,13 @@ int main() {
                             cout << "Deleted movie ID " << movie->id << " from Quadtree." << endl;
                         } else {
                             cout << "Movie ID not found in Quadtree. Delete failed." << endl;
+                        }
+                    } else if (treeChoice == 4) { // Range Tree Delete
+                        if (rangeTree->remove(movie->id)) {
+                            movieById.erase(movie->id);
+                            cout << "Deleted movie ID " << movie->id << " from Range Tree." << endl;
+                        } else {
+                            cout << "Movie ID not found in Range Tree. Delete failed." << endl;
                         }
                     }
                 }
