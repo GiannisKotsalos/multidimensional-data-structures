@@ -10,9 +10,6 @@
 // K defines the number of dimensions we are indexing (Budget, Revenue, etc.)
 const int K = 5; 
 
-//const int MAX_CHILDREN = 4;
-//const int MIN_CHILDREN = 2;
-
 // Rect represents a K-dimensional box (Minimum Bounding Rectangle)
 struct Rect {
     double min_coords[K]; // Minimum values for each dimension
@@ -63,17 +60,29 @@ struct Node {
 class RTree {
 public:
     RTree();
+    ~RTree(); // Added destructor to prevent memory leaks
+    
     void build(const vector<Movie>& movies);    // Main entry point to index the dataset
     void insert(Movie* movie);                  // Adds a single movie to the tree
+    bool remove(int movieId);                   // Removes a movie by ID
+    bool update(int movieId, Movie* newMovieData); // Updates a movie record
+
     vector<Movie*> search(const Rect& query);   // Finds movies within a specific range
-    void executeSearchPhase();                  // Interactive UI for user queries
 
 private:
     Node* root;
+    
     // Recursive helper for the search operation
     void searchInternal(Node* node, const Rect& query, vector<Movie*>& results);
     
- 
+    // Recursive helper for remove operation
+    bool removeInternal(Node* node, int movieId);
+    
+    // Helper to destroy tree
+    void destroyRecursive(Node* node);
+    
+    // Helper to recalculate MBR after deletion
+    void recalculateMBR(Node* node);
 };
 
 #endif

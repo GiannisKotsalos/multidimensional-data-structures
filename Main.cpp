@@ -60,7 +60,7 @@ void displayLSHResults(const vector<pair<Movie*, double>>& results) {
     }
 }
 
-// KD-Tree helpers for dynamic operations
+// Helper for dynamic operations
 static bool promptMovieById(const unordered_map<int, Movie*>& movieById, Movie*& outMovie) {
     cout << "Enter movie ID: ";
     int id;
@@ -176,7 +176,7 @@ pair<array<double, KD_DIMS>, array<double, KD_DIMS>> getUserQueryBounds() {
     string attrNames[KD_DIMS] = {"Budget", "Revenue", "Runtime", "Release Year", "Vote Average"};
     
     int choice;
-cout << "\n╔══════════════════════════════════════╗" << endl;
+    cout << "\n╔══════════════════════════════════════╗" << endl;
     cout << "║          Search Filter Menu          ║" << endl;
     cout << "╠══════════════════════════════════════╣" << endl;
     cout << "║  1. Filter by Budget                 ║" << endl;
@@ -292,7 +292,7 @@ int main() {
     
     cout << "Loaded " << movies.size() << " movies successfully.\n" << endl;
     
-    // Prepare ID lookup for KD-Tree
+    // Prepare ID lookup for dynamic operations
     unordered_map<int, Movie*> movieById;
     movieById.reserve(movies.size());
     for (auto& movie : movies) movieById[movie.id] = &movie;
@@ -384,7 +384,9 @@ int main() {
             cout << "║          Tree Operations Menu          ║" << endl;
             cout << "╠════════════════════════════════════════╣" << endl;
             cout << "║  1. Search                             ║" << endl;
-            if (treeChoice == 2) {
+            
+            // Enable dynamic ops for R-Tree (1) and KD-Tree (2)
+            if (treeChoice == 1 || treeChoice == 2) {
                 cout << "║  2. Insert                             ║" << endl;
                 cout << "║  3. Update                             ║" << endl;
                 cout << "║  4. Delete                             ║" << endl;
@@ -400,7 +402,7 @@ int main() {
             int actionChoice;
             cin >> actionChoice;
 
-            if (treeChoice == 2) {
+            if (treeChoice == 1 || treeChoice == 2) {
                 if (actionChoice == 5) {
                     inActionMenu = false;
                     continue; // Return to Algorithm Selection
@@ -417,7 +419,7 @@ int main() {
             }
 
             if (actionChoice == 1) {
-                // --- Search Logic (Existing functionality) ---
+                // --- Search Logic ---
                 bool searching = true;
                 while (searching) {
                     auto [minBoundsArr, maxBoundsArr] = getUserQueryBounds();
@@ -427,7 +429,6 @@ int main() {
                         continue; // Return to Action Menu
                     }
                     
-                    // Convert to raw pointers for Range Tree (if needed) or simple access
                     double minB[KD_DIMS], maxB[KD_DIMS];
                     for(int i=0; i<KD_DIMS; ++i) { minB[i] = minBoundsArr[i]; maxB[i] = maxBoundsArr[i]; }
 
@@ -493,16 +494,12 @@ int main() {
                         cout << "║  Range Tree: " << ms4 << " ms, " << res4.size() << " results" << endl;
                         cout << "╚═══════════════════════════════════════════════════╝" << endl;
                         
-                        // Use one of the result sets for Phase 2 (they should be identical in content)
                         phase1Results = res4; 
                     }
                     
-                    // Display Phase 1 results
                     displayResults(phase1Results);
                     
-                    // ----------------------------------------------------
-                    // PHASE 2: LSH SIMILARITY SEARCH
-                    // ----------------------------------------------------
+                    // LSH Phase
                     if (!phase1Results.empty()) {
                         char useLSH;
                         cout << "\nWould you like to refine these results using LSH Similarity Search? (y/n): ";
@@ -522,113 +519,114 @@ int main() {
                             
                             if (attrChoice >= 1 && attrChoice <= 3) {
                                 cout << "Building LSH Index on " << phase1Results.size() << " items..." << endl;
-                                auto startLSH = chrono::high_resolution_clock::now();
-                                
-                                // 1. Build Index on the SUBSET
                                 lshSystem.buildIndex(phase1Results, attrChoice);
-                                
-                                auto endLSH = chrono::high_resolution_clock::now();
-                                cout << "LSH Index built in " 
-                                     << chrono::duration_cast<chrono::microseconds>(endLSH - startLSH).count() 
-                                     << " microseconds." << endl;
-                                
-                                // 2. Get User Query String
                                 string queryStr;
                                 cout << "\nEnter text to search for: ";
                                 cin.ignore(); 
                                 getline(cin, queryStr);
-                                
-                                double threshold = 0.1; // 10% similarity
-                                cout << "Searching (Threshold: " << threshold << ")..." << endl;
-                                
-                                // 3. Search LSH
-                                auto lshResults = lshSystem.search(queryStr, threshold);
-                                
+                                auto lshResults = lshSystem.search(queryStr, 0.1);
                                 displayLSHResults(lshResults);
-                            } else {
-                                cout << "Invalid attribute choice." << endl;
                             }
                         }
                     }
-                } // End while(searching)
+                } 
             } 
-            else if (treeChoice == 2 && (actionChoice == 2 || actionChoice == 3 || actionChoice == 4)) {
-                if (kdtree == nullptr) {
-                    cout << "\nKD-Tree not initialized. Build the KD-Tree first.\n" << endl;
-                    continue;
-                }
-
-                if (actionChoice == 2) { // Insert
+            // --- INSERT / UPDATE / DELETE OPERATIONS ---
+            else if ((treeChoice == 1 || treeChoice == 2) && (actionChoice == 2 || actionChoice == 3 || actionChoice == 4)) {
+                
+                // --- INSERT ---
+                if (actionChoice == 2) { 
                     cout << "\nInsert options:" << endl;
                     cout << "1. Insert existing movie by ID" << endl;
                     cout << "2. Insert new custom movie" << endl;
                     cout << "Choice: ";
-                    int insertChoice = 1;
+                    int insertChoice;
                     cin >> insertChoice;
 
+                    Movie* movieToInsert = nullptr;
                     if (insertChoice == 1) {
-                        Movie* movie = nullptr;
-                        if (!promptMovieById(movieById, movie)) continue;
-
-                        KDPoint pt = movieToKDPoint(*movie);
-                        kdtree->insert(pt);
-                        cout << "Inserted movie ID " << movie->id << " into KD-Tree." << endl;
-                    } else if (insertChoice == 2) {
+                         if (!promptMovieById(movieById, movieToInsert)) continue;
+                    } 
+                    else if (insertChoice == 2) {
                         cout << "Enter new movie ID: ";
                         int newId;
                         cin >> newId;
-
                         if (movieById.find(newId) != movieById.end()) {
                             cout << "Movie ID already exists. Insert cancelled." << endl;
                             continue;
                         }
-
                         unique_ptr<Movie> newMovie = promptNewMovie(newId);
-                        Movie* stored = newMovie.get();
+                        movieToInsert = newMovie.get();
                         extraMovies.push_back(move(newMovie));
-                        movieById[newId] = stored;
-
-                        KDPoint pt = movieToKDPoint(*stored);
-                        kdtree->insert(pt);
-                        cout << "Inserted new movie ID " << stored->id << " into KD-Tree." << endl;
+                        movieById[newId] = movieToInsert;
                     } else {
                         cout << "Invalid insert choice." << endl;
+                        continue;
                     }
-                } else if (actionChoice == 3) { // Update
+
+                    if (treeChoice == 1) { // R-Tree Insert
+                        rtree->insert(movieToInsert);
+                        cout << "Inserted movie ID " << movieToInsert->id << " into R-Tree." << endl;
+                    } else if (treeChoice == 2) { // KD-Tree Insert
+                        kdtree->insert(movieToKDPoint(*movieToInsert));
+                        cout << "Inserted movie ID " << movieToInsert->id << " into KD-Tree." << endl;
+                    }
+                } 
+                // --- UPDATE ---
+                else if (actionChoice == 3) { 
                     Movie* movie = nullptr;
                     if (!promptMovieById(movieById, movie)) continue;
 
                     KDPoint newPt = promptKDPointFromUser(movie->id);
 
-                    // Keep Movie data consistent with updated KDPoint
+                    // Sync Movie Object
                     movie->budget = newPt[0];
                     movie->revenue = newPt[1];
                     movie->runtime = static_cast<int>(newPt[2]);
                     movie->release_year = static_cast<int>(newPt[3]);
                     movie->vote_average = newPt[4];
 
-                    if (kdtree->updatePoint(movie->id, newPt)) {
-                        cout << "Updated movie ID " << movie->id << " in KD-Tree." << endl;
-                    } else {
-                        cout << "Movie ID not found in KD-Tree. Update failed." << endl;
+                    if (treeChoice == 1) { // R-Tree Update
+                        if (rtree->update(movie->id, movie)) {
+                             cout << "Updated movie ID " << movie->id << " in R-Tree." << endl;
+                        } else {
+                             cout << "Movie ID not found in R-Tree. Update failed." << endl;
+                        }
+                    } else if (treeChoice == 2) { // KD-Tree Update
+                        if (kdtree->updatePoint(movie->id, newPt)) {
+                            cout << "Updated movie ID " << movie->id << " in KD-Tree." << endl;
+                        } else {
+                            cout << "Movie ID not found in KD-Tree. Update failed." << endl;
+                        }
                     }
-                } else if (actionChoice == 4) { // Delete
+                } 
+                // --- DELETE ---
+                else if (actionChoice == 4) { 
                     Movie* movie = nullptr;
                     if (!promptMovieById(movieById, movie)) continue;
 
-                    KDPoint pt = movieToKDPoint(*movie);
-                    if (kdtree->deleteNode(pt)) {
-                        movieById.erase(movie->id);
-                        cout << "Deleted movie ID " << movie->id << " from KD-Tree." << endl;
-                    } else {
-                        cout << "Movie ID not found in KD-Tree. Delete failed." << endl;
+                    if (treeChoice == 1) { // R-Tree Delete
+                        if (rtree->remove(movie->id)) {
+                             movieById.erase(movie->id);
+                             cout << "Deleted movie ID " << movie->id << " from R-Tree." << endl;
+                        } else {
+                             cout << "Movie ID not found in R-Tree. Delete failed." << endl;
+                        }
+                    } else if (treeChoice == 2) { // KD-Tree Delete
+                        KDPoint pt = movieToKDPoint(*movie);
+                        if (kdtree->deleteNode(pt)) {
+                            movieById.erase(movie->id);
+                            cout << "Deleted movie ID " << movie->id << " from KD-Tree." << endl;
+                        } else {
+                            cout << "Movie ID not found in KD-Tree. Delete failed." << endl;
+                        }
                     }
                 }
             } 
             else {
                 cout << "Invalid choice. Please try again." << endl;
             }
-        } // End while(inActionMenu)
+        } 
     }
     
     // Cleanup
