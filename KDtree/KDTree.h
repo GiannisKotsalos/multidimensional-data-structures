@@ -53,6 +53,10 @@ class KDTree {
 private:
     KDNode* root;
 
+    KDNode* insertRecursive(KDNode* node, const KDPoint& point, int depth);
+    KDNode* findMinRecursive(KDNode* node, int dim, int depth) const;
+    KDNode* deleteRecursive(KDNode* node, const KDPoint& point, int depth, bool& removed);
+    bool findPointById(KDNode* node, int id, KDPoint& out) const;
     KDNode* buildTreeRecursive(vector<KDPoint>& points, size_t begin, size_t end, int depth);
     
     void rangeQueryRecursive(KDNode* node, 
@@ -66,6 +70,11 @@ private:
 public:
     KDTree();
     ~KDTree();
+
+    // Dynamic operations
+    void insert(const KDPoint& point);
+    bool deleteNode(const KDPoint& point);
+    bool updatePoint(int id, const KDPoint& newPt);
 
     // Build balanced tree from vector of points
     void build(const vector<Movie>& movies);

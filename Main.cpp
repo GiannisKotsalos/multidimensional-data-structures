@@ -5,6 +5,7 @@
 #include <unordered_map>
 #include <array>
 #include <iomanip> // Required for setprecision
+#include <memory>
 #include "Movie.h"
 #include "FileReader.h"
 #include "LSH.h"   // Include the LSH header
@@ -57,6 +58,114 @@ void displayLSHResults(const vector<pair<Movie*, double>>& results) {
         for(const auto& c : movie->production_company_names) cout << c << "; ";
         cout << endl;
     }
+}
+
+// KD-Tree helpers for dynamic operations
+static bool promptMovieById(const unordered_map<int, Movie*>& movieById, Movie*& outMovie) {
+    cout << "Enter movie ID: ";
+    int id;
+    cin >> id;
+
+    auto it = movieById.find(id);
+    if (it == movieById.end() || it->second == nullptr) {
+        cout << "Movie ID not found in dataset." << endl;
+        return false;
+    }
+
+    outMovie = it->second;
+    return true;
+}
+
+static vector<string> splitCommaList(const string& input) {
+    vector<string> out;
+    string cur;
+    for (char c : input) {
+        if (c == ',') {
+            if (!cur.empty()) {
+                // trim leading/trailing spaces
+                size_t start = cur.find_first_not_of(' ');
+                size_t end = cur.find_last_not_of(' ');
+                if (start != string::npos) out.push_back(cur.substr(start, end - start + 1));
+            }
+            cur.clear();
+        } else {
+            cur.push_back(c);
+        }
+    }
+    if (!cur.empty()) {
+        size_t start = cur.find_first_not_of(' ');
+        size_t end = cur.find_last_not_of(' ');
+        if (start != string::npos) out.push_back(cur.substr(start, end - start + 1));
+    }
+    return out;
+}
+
+static unique_ptr<Movie> promptNewMovie(int id) {
+    auto m = make_unique<Movie>();
+    m->id = id;
+
+    cout << "Enter title: ";
+    cin.ignore();
+    getline(cin, m->title);
+
+    cout << "Enter original language (e.g., en): ";
+    getline(cin, m->original_language);
+
+    cout << "Enter origin countries (comma-separated, optional): ";
+    string originInput;
+    getline(cin, originInput);
+    m->origin_country = splitCommaList(originInput);
+
+    cout << "Enter genres (comma-separated, optional): ";
+    string genreInput;
+    getline(cin, genreInput);
+    m->genre_names = splitCommaList(genreInput);
+
+    cout << "Enter production companies (comma-separated, optional): ";
+    string companyInput;
+    getline(cin, companyInput);
+    m->production_company_names = splitCommaList(companyInput);
+
+    cout << "Enter budget: ";
+    cin >> m->budget;
+    cout << "Enter revenue: ";
+    cin >> m->revenue;
+    cout << "Enter runtime (minutes): ";
+    cin >> m->runtime;
+    cout << "Enter release year: ";
+    cin >> m->release_year;
+    cout << "Enter popularity: ";
+    cin >> m->popularity;
+    cout << "Enter vote average (0-10): ";
+    cin >> m->vote_average;
+
+    return m;
+}
+
+static KDPoint promptKDPointFromUser(int id) {
+    double budget, revenue, voteAverage;
+    int runtime, releaseYear;
+
+    cout << "Enter new budget: ";
+    cin >> budget;
+    cout << "Enter new revenue: ";
+    cin >> revenue;
+    cout << "Enter new runtime (minutes): ";
+    cin >> runtime;
+    cout << "Enter new release year: ";
+    cin >> releaseYear;
+    cout << "Enter new vote average (0-10): ";
+    cin >> voteAverage;
+
+    array<double, KD_DIMS> coords = {
+        budget,
+        revenue,
+        static_cast<double>(runtime),
+        static_cast<double>(releaseYear),
+        voteAverage
+    };
+
+    return KDPoint(coords, id);
 }
 
 // Get query bounds from user - returns pair of min/max arrays
@@ -187,6 +296,9 @@ int main() {
     unordered_map<int, Movie*> movieById;
     movieById.reserve(movies.size());
     for (auto& movie : movies) movieById[movie.id] = &movie;
+
+    vector<unique_ptr<Movie>> extraMovies;
+    extraMovies.reserve(128);
     
     // Tree pointers
     RTree* rtree = nullptr;
@@ -272,21 +384,36 @@ int main() {
             cout << "║          Tree Operations Menu          ║" << endl;
             cout << "╠════════════════════════════════════════╣" << endl;
             cout << "║  1. Search                             ║" << endl;
-            cout << "║  2. Insert (Do nothing)                ║" << endl;
-            cout << "║  3. Update (Do nothing)                ║" << endl;
-            cout << "║  4. Delete (Do nothing)                ║" << endl;
-            cout << "║  5. Back to Algorithm Selection        ║" << endl;
-            cout << "╚════════════════════════════════════════╝" << endl;
-            cout << "Enter your choice (1-5): ";
-            
-
+            if (treeChoice == 2) {
+                cout << "║  2. Insert                             ║" << endl;
+                cout << "║  3. Update                             ║" << endl;
+                cout << "║  4. Delete                             ║" << endl;
+                cout << "║  5. Back to Algorithm Selection        ║" << endl;
+                cout << "╚════════════════════════════════════════╝" << endl;
+                cout << "Enter your choice (1-5): ";
+            } else {
+                cout << "║  2. Back to Algorithm Selection        ║" << endl;
+                cout << "╚════════════════════════════════════════╝" << endl;
+                cout << "Enter your choice (1-2): ";
+            }
 
             int actionChoice;
             cin >> actionChoice;
 
-            if (actionChoice == 5) {
-                inActionMenu = false;
-                continue; // Return to Algorithm Selection
+            if (treeChoice == 2) {
+                if (actionChoice == 5) {
+                    inActionMenu = false;
+                    continue; // Return to Algorithm Selection
+                }
+            } else {
+                if (actionChoice == 2) {
+                    inActionMenu = false;
+                    continue;
+                }
+                if (actionChoice != 1) {
+                    cout << "Invalid choice. Please try again." << endl;
+                    continue;
+                }
             }
 
             if (actionChoice == 1) {
@@ -425,10 +552,78 @@ int main() {
                     }
                 } // End while(searching)
             } 
-            else if (actionChoice == 2 || actionChoice == 3 || actionChoice == 4) {
-                // Insert, Update, Delete -> Do nothing as requested
-                cout << "\nAction selected but not implemented (NO-OP).\n" << endl;
-                // Loop continues, returning to Action Menu
+            else if (treeChoice == 2 && (actionChoice == 2 || actionChoice == 3 || actionChoice == 4)) {
+                if (kdtree == nullptr) {
+                    cout << "\nKD-Tree not initialized. Build the KD-Tree first.\n" << endl;
+                    continue;
+                }
+
+                if (actionChoice == 2) { // Insert
+                    cout << "\nInsert options:" << endl;
+                    cout << "1. Insert existing movie by ID" << endl;
+                    cout << "2. Insert new custom movie" << endl;
+                    cout << "Choice: ";
+                    int insertChoice = 1;
+                    cin >> insertChoice;
+
+                    if (insertChoice == 1) {
+                        Movie* movie = nullptr;
+                        if (!promptMovieById(movieById, movie)) continue;
+
+                        KDPoint pt = movieToKDPoint(*movie);
+                        kdtree->insert(pt);
+                        cout << "Inserted movie ID " << movie->id << " into KD-Tree." << endl;
+                    } else if (insertChoice == 2) {
+                        cout << "Enter new movie ID: ";
+                        int newId;
+                        cin >> newId;
+
+                        if (movieById.find(newId) != movieById.end()) {
+                            cout << "Movie ID already exists. Insert cancelled." << endl;
+                            continue;
+                        }
+
+                        unique_ptr<Movie> newMovie = promptNewMovie(newId);
+                        Movie* stored = newMovie.get();
+                        extraMovies.push_back(move(newMovie));
+                        movieById[newId] = stored;
+
+                        KDPoint pt = movieToKDPoint(*stored);
+                        kdtree->insert(pt);
+                        cout << "Inserted new movie ID " << stored->id << " into KD-Tree." << endl;
+                    } else {
+                        cout << "Invalid insert choice." << endl;
+                    }
+                } else if (actionChoice == 3) { // Update
+                    Movie* movie = nullptr;
+                    if (!promptMovieById(movieById, movie)) continue;
+
+                    KDPoint newPt = promptKDPointFromUser(movie->id);
+
+                    // Keep Movie data consistent with updated KDPoint
+                    movie->budget = newPt[0];
+                    movie->revenue = newPt[1];
+                    movie->runtime = static_cast<int>(newPt[2]);
+                    movie->release_year = static_cast<int>(newPt[3]);
+                    movie->vote_average = newPt[4];
+
+                    if (kdtree->updatePoint(movie->id, newPt)) {
+                        cout << "Updated movie ID " << movie->id << " in KD-Tree." << endl;
+                    } else {
+                        cout << "Movie ID not found in KD-Tree. Update failed." << endl;
+                    }
+                } else if (actionChoice == 4) { // Delete
+                    Movie* movie = nullptr;
+                    if (!promptMovieById(movieById, movie)) continue;
+
+                    KDPoint pt = movieToKDPoint(*movie);
+                    if (kdtree->deleteNode(pt)) {
+                        movieById.erase(movie->id);
+                        cout << "Deleted movie ID " << movie->id << " from KD-Tree." << endl;
+                    } else {
+                        cout << "Movie ID not found in KD-Tree. Delete failed." << endl;
+                    }
+                }
             } 
             else {
                 cout << "Invalid choice. Please try again." << endl;
