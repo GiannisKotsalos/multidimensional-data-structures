@@ -53,7 +53,21 @@ void Quadtree::build(const vector<Movie>& movies) {
     cout << "Quadtree construction complete." << endl;
 }
 
-// 2. Insert
+// 2. Public Insert (handles empty tree; delegates to internal insert)
+void Quadtree::insert(Movie* movie) {
+    array<double, Q_K> p = getMovieCoords(movie);
+
+    if (root == nullptr) {
+        QuadRect bounds;
+        bounds.min_coords = p;
+        bounds.max_coords = p;
+        for (int i = 0; i < Q_K; ++i) bounds.max_coords[i] += 0.001;
+        root = new QNode(bounds);
+    }
+
+    insert(root, movie);
+}
+
 void Quadtree::insert(QNode* node, Movie* m) {
     if (node->isLeaf) {
         node->data.push_back(m);
@@ -110,6 +124,43 @@ QuadRect Quadtree::getSubBoundary(const QuadRect& original, int index) {
         }
     }
     return sub;
+}
+
+// ==================== Remove ====================
+
+bool Quadtree::removeInternal(QNode* node, int movieId) {
+    if (!node) return false;
+
+    if (node->isLeaf) {
+        for (auto it = node->data.begin(); it != node->data.end(); ++it) {
+            if ((*it) && (*it)->id == movieId) {
+                node->data.erase(it);
+                return true;
+            }
+        }
+        return false;
+    }
+
+    for (int i = 0; i < NUM_CHILDREN; ++i) {
+        if (node->children[i] && removeInternal(node->children[i], movieId)) {
+            return true;
+        }
+    }
+    return false;
+}
+
+bool Quadtree::remove(int movieId) {
+    if (!root) return false;
+    return removeInternal(root, movieId);
+}
+
+// ==================== Update ====================
+
+bool Quadtree::update(int movieId, Movie* newMovieData) {
+    // Same pattern as R-Tree: delete + insert (coordinates may change)
+    if (!remove(movieId)) return false;
+    insert(newMovieData);
+    return true;
 }
 
 // 5. Search

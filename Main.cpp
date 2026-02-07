@@ -385,8 +385,8 @@ int main() {
             cout << "╠════════════════════════════════════════╣" << endl;
             cout << "║  1. Search                             ║" << endl;
             
-            // Enable dynamic ops for R-Tree (1) and KD-Tree (2)
-            if (treeChoice == 1 || treeChoice == 2) {
+            // Enable dynamic ops for R-Tree (1), KD-Tree (2), and Quadtree (3)
+            if (treeChoice == 1 || treeChoice == 2 || treeChoice == 3) {
                 cout << "║  2. Insert                             ║" << endl;
                 cout << "║  3. Update                             ║" << endl;
                 cout << "║  4. Delete                             ║" << endl;
@@ -402,7 +402,7 @@ int main() {
             int actionChoice;
             cin >> actionChoice;
 
-            if (treeChoice == 1 || treeChoice == 2) {
+            if (treeChoice == 1 || treeChoice == 2 || treeChoice == 3) {
                 if (actionChoice == 5) {
                     inActionMenu = false;
                     continue; // Return to Algorithm Selection
@@ -532,7 +532,7 @@ int main() {
                 } 
             } 
             // --- INSERT / UPDATE / DELETE OPERATIONS ---
-            else if ((treeChoice == 1 || treeChoice == 2) && (actionChoice == 2 || actionChoice == 3 || actionChoice == 4)) {
+            else if ((treeChoice == 1 || treeChoice == 2 || treeChoice == 3) && (actionChoice == 2 || actionChoice == 3 || actionChoice == 4)) {
                 
                 // --- INSERT ---
                 if (actionChoice == 2) { 
@@ -570,6 +570,9 @@ int main() {
                     } else if (treeChoice == 2) { // KD-Tree Insert
                         kdtree->insert(movieToKDPoint(*movieToInsert));
                         cout << "Inserted movie ID " << movieToInsert->id << " into KD-Tree." << endl;
+                    } else if (treeChoice == 3) { // Quadtree Insert
+                        qtree->insert(movieToInsert);
+                        cout << "Inserted movie ID " << movieToInsert->id << " into Quadtree." << endl;
                     }
                 } 
                 // --- UPDATE ---
@@ -598,6 +601,12 @@ int main() {
                         } else {
                             cout << "Movie ID not found in KD-Tree. Update failed." << endl;
                         }
+                    } else if (treeChoice == 3) { // Quadtree Update
+                        if (qtree->update(movie->id, movie)) {
+                            cout << "Updated movie ID " << movie->id << " in Quadtree." << endl;
+                        } else {
+                            cout << "Movie ID not found in Quadtree. Update failed." << endl;
+                        }
                     }
                 } 
                 // --- DELETE ---
@@ -619,6 +628,13 @@ int main() {
                             cout << "Deleted movie ID " << movie->id << " from KD-Tree." << endl;
                         } else {
                             cout << "Movie ID not found in KD-Tree. Delete failed." << endl;
+                        }
+                    } else if (treeChoice == 3) { // Quadtree Delete
+                        if (qtree->remove(movie->id)) {
+                            movieById.erase(movie->id);
+                            cout << "Deleted movie ID " << movie->id << " from Quadtree." << endl;
+                        } else {
+                            cout << "Movie ID not found in Quadtree. Delete failed." << endl;
                         }
                     }
                 }

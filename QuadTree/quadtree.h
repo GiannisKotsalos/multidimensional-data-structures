@@ -66,7 +66,12 @@ public:
     ~Quadtree();
 
     void build(const std::vector<Movie>& movies);
-    
+
+    // Dynamic operations (matching R-Tree / KD-Tree API)
+    void insert(Movie* movie);
+    bool remove(int movieId);
+    bool update(int movieId, Movie* newMovieData);
+
     // Search now takes our unique "QuadRect"
     std::vector<Movie*> search(const QuadRect& query);
 
@@ -74,6 +79,7 @@ private:
     QNode* root;
 
     void insert(QNode* node, Movie* m);
+    bool removeInternal(QNode* node, int movieId);
     void split(QNode* node);
     int getIndex(const QuadRect& boundary, const std::array<double, Q_K>& point);
     QuadRect getSubBoundary(const QuadRect& original, int index);
