@@ -33,7 +33,7 @@ void RangeTree::build(const vector<Movie>& movies) {
     moviePtrs.reserve(movies.size());
     for (const auto& m : movies) moviePtrs.push_back(const_cast<Movie*>(&m));
 
-    cout << "\n--- Building Range Tree (2D Canonical Index) ---" << endl;
+    cout << "\n---- Building 2D Range Tree  ----" << endl;
     root = buildRecursive(moviePtrs, 0);
     cout << "Range Tree construction complete." << endl;
 }
