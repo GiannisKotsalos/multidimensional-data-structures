@@ -1,7 +1,9 @@
 #include "KDTree.h"
 #include <iostream>
 
-// ==================== KDPoint Implementation ====================
+//  -KDPoint-
+
+// Value type: a 5D coordinate vector (budget, revenue, runtime, release year, vote average) plus a stable ID.
 
 KDPoint::KDPoint() : id(-1) {
     for (int i = 0; i < KD_DIMS; i++) {
@@ -32,7 +34,7 @@ bool KDPoint::operator==(const KDPoint& other) const {
     return true;
 }
 
-// Convert Movie to KDPoint
+// Map Movie fields to the KD-Tree's 5 numeric dimensions.
 KDPoint movieToKDPoint(const Movie& movie) {
     array<double, KD_DIMS> coords;
     coords[0] = movie.budget;
@@ -44,11 +46,10 @@ KDPoint movieToKDPoint(const Movie& movie) {
     return KDPoint(coords, movie.id);
 }
 
-// ==================== KDNode Implementation ====================
+//  -KDTree-
+// Balanced build + dynamic edits + range queries.
 
 KDNode::KDNode(const KDPoint& pt) : point(pt), left(nullptr), right(nullptr) {}
-
-// ==================== KDTree Implementation ====================
 
 KDTree::KDTree() : root(nullptr) {}
 
@@ -56,6 +57,7 @@ KDTree::~KDTree() {
     destroyRecursive(root);
 }
 
+// Recursively deletes nodes (post-order), safe for any tree shape.
 void KDTree::destroyRecursive(KDNode* node) {
     if (node != nullptr) {
         destroyRecursive(node->left);
@@ -64,7 +66,9 @@ void KDTree::destroyRecursive(KDNode* node) {
     }
 }
 
-// ==================== Insert ====================
+//  -Insert-
+// Inserts the point into the tree by cycling the split dimension (depth % KD_DIMS) and resolving ties by ID.
+// Returns the new node
 
 KDNode* KDTree::insertRecursive(KDNode* node, const KDPoint& point, int depth) {
     if (node == nullptr) return new KDNode(point);
@@ -84,7 +88,8 @@ void KDTree::insert(const KDPoint& point) {
     root = insertRecursive(root, point, 0);
 }
 
-// ==================== Build Balanced Tree ====================
+//  -Build Balanced Tree-
+// Uses nth_element to place the median on the current split dimension to keep the tree height close to O(log n) .
 
 KDNode* KDTree::buildTreeRecursive(vector<KDPoint>& points, size_t begin, size_t end, int depth) {
     if (begin >= end) return nullptr;
@@ -124,7 +129,8 @@ void KDTree::build(const vector<Movie>& movies) {
     cout << "KD-Tree construction complete. Indexed " << movies.size() << " movies." << endl;
 }
 
-// ==================== Find Minimum ====================
+//  -Find Minimum-
+// Used by delete to find the replacement point on a dimension to replace the target node. Returns the minimum node.
 
 KDNode* KDTree::findMinRecursive(KDNode* node, int dim, int depth) const {
     if (node == nullptr) return nullptr;
@@ -151,8 +157,7 @@ KDNode* KDTree::findMinRecursive(KDNode* node, int dim, int depth) const {
     return minNode;
 }
 
-// ==================== Delete ====================
-
+//  -Delete Point-  Replaces the target node with the subtree minimum on the split dimension. Returns the new node.
 KDNode* KDTree::deleteRecursive(KDNode* node, const KDPoint& point, int depth, bool& removed) {
     if (node == nullptr) return nullptr;
 
@@ -193,7 +198,8 @@ bool KDTree::deleteNode(const KDPoint& point) {
     return removed;
 }
 
-// ==================== Update ====================
+//  -Update Point-
+// Finds the point by ID, deletes it, and inserts the new point. Returns true if successful, false otherwise.
 
 bool KDTree::findPointById(KDNode* node, int id, KDPoint& out) const {
     if (node == nullptr) return false;
@@ -217,7 +223,8 @@ bool KDTree::updatePoint(int id, const KDPoint& newPt) {
     return true;
 }
 
-// ==================== Range Query ====================
+//  -Range Query-
+// Collects all points inside the axis-aligned query box. Returns a vector of KDPoints.
 
 void KDTree::rangeQueryRecursive(KDNode* node, 
                                   const array<double, KD_DIMS>& minBounds,
@@ -229,7 +236,7 @@ void KDTree::rangeQueryRecursive(KDNode* node,
     int cd = depth % KD_DIMS;
     bool inRange = true;
 
-    // Check if current point is within the range
+    // Checks if the current point is within the range
     for (int i = 0; i < KD_DIMS; i++) {
         if (node->point[i] < minBounds[i] || node->point[i] > maxBounds[i]) {
             inRange = false;
@@ -241,23 +248,27 @@ void KDTree::rangeQueryRecursive(KDNode* node,
         results.push_back(node->point);
     }
 
-    // Check if we need to search left subtree
+    // Checks if we need to search the left subtree
     if (minBounds[cd] <= node->point[cd]) {
         rangeQueryRecursive(node->left, minBounds, maxBounds, results, depth + 1);
     }
 
-    // Check if we need to search right subtree
+    // Checks if we need to search the right subtree
     if (maxBounds[cd] >= node->point[cd]) {
         rangeQueryRecursive(node->right, minBounds, maxBounds, results, depth + 1);
     }
 }
 
+// Returns a vector of KDPoints inside the axis-aligned query box.
 vector<KDPoint> KDTree::rangeQueryPoints(const array<double, KD_DIMS>& minBounds,
                                           const array<double, KD_DIMS>& maxBounds) const {
     vector<KDPoint> results;
     rangeQueryRecursive(root, minBounds, maxBounds, results, 0);
     return results;
 }
+
+//  -Search-
+// Collects all points inside the axis-aligned query box and returns a vector of Movies.
 
 vector<Movie*> KDTree::search(const array<double, KD_DIMS>& minBounds,
                                const array<double, KD_DIMS>& maxBounds,
@@ -272,5 +283,5 @@ vector<Movie*> KDTree::search(const array<double, KD_DIMS>& minBounds,
             results.push_back(it->second);
         }
     }
-    return results;
+    return results; // Returns a vector of Movies inside the axis-aligned query box.
 }
