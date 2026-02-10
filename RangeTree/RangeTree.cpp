@@ -56,7 +56,7 @@ RangeNode* RangeTree::buildRecursive(vector<Movie*>& movies, int dim) {
     node->left = buildRecursive(leftSubset, dim);
     node->right = buildRecursive(rightSubset, dim);
 
-    // 3. Build Associative Tree (Only for Dimension 0 -> 1)
+    // 3. Build Tree (Only for Dimension 0 -> 1)
     if (dim < RT_INDEX_DIMS - 1) {
         // Must sort copy of ALL movies in this subtree by the *next* dimension
         vector<Movie*> nextDimMovies = movies; 
@@ -66,7 +66,6 @@ RangeNode* RangeTree::buildRecursive(vector<Movie*>& movies, int dim) {
     return node;
 }
 
-// --- Dynamic Operations Implementation ---
 
 void RangeTree::insert(Movie* m) {
     if (!m) return;
@@ -84,9 +83,7 @@ RangeNode* RangeTree::insertRecursive(RangeNode* node, Movie* m, int dim) {
         return newNode;
     }
 
-    // 2. Maintain Associative Structure (If Dim 0)
-    // Every node in the primary tree effectively "contains" the point in its range,
-    // so we must insert the point into the associative tree of the current node.
+    // 2. If DIM=0 add new movie to the second DIM on each node
     if (dim < RT_INDEX_DIMS - 1) {
         node->nextDimTree = insertRecursive(node->nextDimTree, m, dim + 1);
     }
@@ -111,15 +108,13 @@ bool RangeTree::remove(int id) {
 }
 
 // Recursively removes node by ID.
-// Note: We search by ID (O(N)) instead of Value because update operations might 
-// have changed the movie values in-place, rendering the BST structure invalid for search.
 RangeNode* RangeTree::removeRecursiveById(RangeNode* node, int id, int dim, bool &deleted) {
     if (!node) return nullptr;
 
     // 1. Maintain Associative Structure (If Dim 0)
-    // We must remove the movie from the associative tree of every ancestor it belongs to.
+    // Remove movie from each internal node
     if (dim < RT_INDEX_DIMS - 1 && node->nextDimTree) {
-        bool subDeleted = false; // dummy
+        bool subDeleted = false;
         node->nextDimTree = removeRecursiveById(node->nextDimTree, id, dim + 1, subDeleted);
     }
 
@@ -164,8 +159,8 @@ RangeNode* RangeTree::removeRecursiveById(RangeNode* node, int id, int dim, bool
 }
 
 bool RangeTree::update(int id, Movie* m) {
-    // To handle updates robustly (especially if 'm' was modified in-place),
-    // we first remove the old entry by ID, then insert the new one.
+
+    // First remove the old entry by ID, then insert the new one
     bool removed = remove(id);
     if (removed) {
         insert(m);
@@ -193,11 +188,11 @@ vector<Movie*> RangeTree::search(const double minBounds[RT_TOTAL_DIMS], const do
 RangeNode* RangeTree::findSplitNode(RangeNode* node, double minVal, double maxVal, int dim) {
     while (node) {
         double val = getVal(node->movie, dim);
-        // If node value is greater than max, go left (target range is to the left)
+        // If node value is greater than max, go left
         if (val > maxVal) {
             node = node->left;
         } 
-        // If node value is less than min, go right (target range is to the right)
+        // If node value is less than min, go right
         else if (val < minVal) {
             node = node->right;
         } 

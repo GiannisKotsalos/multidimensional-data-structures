@@ -38,7 +38,7 @@ private:
     // Build
     RangeNode* buildRecursive(vector<Movie*>& movies, int dim);
     
-    // Helpers
+    
     void deleteTree(RangeNode* node, int dim);
     double getVal(const Movie* m, int dim);
     
@@ -48,7 +48,7 @@ private:
     RangeNode* findSplitNode(RangeNode* node, double minVal, double maxVal, int dim);
     bool isMatchRest(Movie* m, const double minBounds[], const double maxBounds[]);
 
-    // --- New Dynamic Implementation Helpers ---
+    // New Dynamic Implementation Helpers
     RangeNode* insertRecursive(RangeNode* node, Movie* m, int dim);
     RangeNode* removeRecursiveById(RangeNode* node, int id, int dim, bool &deleted);
     RangeNode* minValueNode(RangeNode* node);
