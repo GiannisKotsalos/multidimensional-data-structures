@@ -537,7 +537,8 @@ int main() {
                 // --- INSERT ---
                 if (actionChoice == 2) { 
                     cout << "\nInsert options:" << endl;
-                    cout << "1. Insert existing movie by ID" << endl;
+                    
+                    cout << "1. Insert new movie by ID from CSV" << endl;
                     cout << "2. Insert new custom movie" << endl;
                     cout << "Choice: ";
                     int insertChoice;
