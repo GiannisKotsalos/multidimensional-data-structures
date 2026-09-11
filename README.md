@@ -1,4 +1,4 @@
-# 🚀 System Overview
+#  System Overview
 
 The system implements a specialized two-phase approach for high-dimensional data retrieval and similarity analysis:
 
@@ -11,7 +11,7 @@ Textual similarity search on titles, genres, and production companies using the 
 
 ---
 
-## 🛠 Implemented Data Structures
+##  Implemented Data Structures
 
 The project focuses on comparing the efficiency of various multidimensional indexing structures:
 
@@ -34,7 +34,7 @@ The project focuses on comparing the efficiency of various multidimensional inde
 
 ---
 
-## 🔍 Similarity Search (LSH)
+##  Similarity Search (LSH)
 To handle non-numerical data, the system implements:
 * **Shingling:** Breaking text into 3-character sequences (3-shingles).
 * **MinHashing:** Reducing large sets of shingles into short signatures while preserving Jaccard similarity.
