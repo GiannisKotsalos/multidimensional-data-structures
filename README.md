@@ -201,7 +201,7 @@ g++ -std=c++17 -O3 src/*.cpp -o movie_search
 
 
 
-* Multidimensional Data Structures — Department of Computer Engineering & Informatics, University of Patras (February 2026).*
+
 
 ---
 
