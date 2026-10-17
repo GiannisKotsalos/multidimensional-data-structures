@@ -9,7 +9,6 @@
 ![C++](https://img.shields.io/badge/C%2B%2B-17-00599C?logo=cplusplus&logoColor=white)
 ![Optimization](https://img.shields.io/badge/build-%2DO3-success)
 ![Dataset](https://img.shields.io/badge/dataset-946K%2B%20movies-blueviolet)
-![Course](https://img.shields.io/badge/course-Multidimensional%20Data%20Structures-orange)
 
 
 
