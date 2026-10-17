@@ -1,6 +1,6 @@
 <div align="center">
 
-# 🎬 Multidimensional Movie Search
+# 🎬 Multidimensional Movie Search Engine Project
 
 ### k-d Tree · Quadtree · R-tree · Range Tree · LSH
 
