@@ -11,7 +11,7 @@
 ![Dataset](https://img.shields.io/badge/dataset-946K%2B%20movies-blueviolet)
 ![Course](https://img.shields.io/badge/course-Multidimensional%20Data%20Structures-orange)
 
-*Department of Computer Engineering & Informatics, University of Patras — Academic Year 2025–2026*
+
 
 </div>
 
@@ -188,7 +188,7 @@ g++ -std=c++17 -O3 src/*.cpp -o movie_search
 
 ---
 
-## 🧠 Complexity Summary
+##  Complexity Summary
 
 | Structure | Build | Range search | Space |
 |-----------|-------|--------------|-------|
@@ -199,16 +199,10 @@ g++ -std=c++17 -O3 src/*.cpp -o movie_search
 
 ---
 
-## 👥 Team
 
-| Name |
-|------|
-| Ioannis Kotsalos |
-| Georgios Papagiannoulis |
-| Spyridon Mantadakis |
-| Andreas Karamalikis |
 
-*Course: Multidimensional Data Structures — Department of Computer Engineering & Informatics, University of Patras (February 2026).*
+
+* Multidimensional Data Structures — Department of Computer Engineering & Informatics, University of Patras (February 2026).*
 
 ---
 
